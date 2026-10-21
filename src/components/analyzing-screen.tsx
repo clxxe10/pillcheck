@@ -6,6 +6,7 @@ import { PulseOrb, Spinner } from "@/components/orb";
 import { foundLabel, readProgressLabel } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
 import { sampleResult } from "@/lib/mock";
+import { requestSafety } from "@/lib/safety-client";
 import { finishAnalysis, runPendingAnalysis, useScan } from "@/lib/scan-store";
 import { completeAnalysis } from "@/lib/session";
 import { useRouter } from "next/navigation";
@@ -19,49 +20,61 @@ export function AnalyzingScreen({ hold = false }: { hold?: boolean }) {
   const { pending } = useScan();
   const photoCount = pending?.photos.length ?? 3;
   const count = !pending || pending.demo ? sampleResult().medicines.length : null;
-  const [readFor, setReadFor] = useState<object | null | undefined>(undefined);
-  const readDone = readFor === pending;
+  const [stage, setStage] = useState<"read" | "match" | "safety" | "done">(hold ? "match" : "read");
 
   useEffect(() => {
     if (hold) return;
     let cancelled = false;
-    const readTimer = window.setTimeout(() => setReadFor(pending), READ_STEP_MS);
-    runPendingAnalysis().then((outcome) => {
+    let leaveTimer = 0;
+    const readTimer = window.setTimeout(() => {
+      setStage((current) => (current === "read" ? "match" : current));
+    }, READ_STEP_MS);
+    runPendingAnalysis().then(async (outcome) => {
       if (cancelled) return;
-      if (outcome.type === "success") completeAnalysis(outcome);
-      router.replace(finishAnalysis(outcome));
+      if (outcome.type !== "success") {
+        router.replace(finishAnalysis(outcome));
+        return;
+      }
+      setStage("safety");
+      const alerts = await requestSafety(outcome.medicines);
+      if (cancelled) return;
+      completeAnalysis({ ...outcome, alerts });
+      setStage("done");
+      leaveTimer = window.setTimeout(() => {
+        if (!cancelled) router.replace(finishAnalysis(outcome));
+      }, 450);
     });
     return () => {
       cancelled = true;
       window.clearTimeout(readTimer);
+      window.clearTimeout(leaveTimer);
     };
   }, [hold, pending, router]);
 
   const steps = (
     <div className="px-[18px] lg:px-6" style={{ position: "relative", background: "#fff", borderRadius: 24 }}>
-      {hold || readDone ? (
-        <Step
-          done
-          title={t("analyzing.reading")}
-          detail={readProgressLabel(photoCount, photoCount, lang)}
-          divider
-        />
-      ) : (
-        <Step
-          spinning
-          title={t("analyzing.reading")}
-          detail={readProgressLabel(0, photoCount, lang)}
-          divider
-        />
-      )}
       <Step
-        spinning={hold || readDone}
-        pending={!hold && !readDone}
+        done={stage !== "read"}
+        spinning={stage === "read"}
+        title={t("analyzing.reading")}
+        detail={readProgressLabel(stage === "read" ? 0 : photoCount, photoCount, lang)}
+        divider
+      />
+      <Step
+        done={stage === "safety" || stage === "done"}
+        spinning={stage === "match"}
+        pending={stage === "read"}
         title={t("analyzing.matching")}
         detail={count === null ? t("analyzing.matchingSub") : foundLabel(count, lang)}
         divider
       />
-      <Step pending title={t("analyzing.safety")} detail={t("analyzing.safetySub")} />
+      <Step
+        done={stage === "done"}
+        spinning={stage === "safety"}
+        pending={stage === "read" || stage === "match"}
+        title={t("analyzing.safety")}
+        detail={t("analyzing.safetySub")}
+      />
     </div>
   );
 

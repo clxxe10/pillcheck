@@ -1,0 +1,31 @@
+{
+  "contraindicated": [
+    {
+      "a": "warfarin",
+      "b": "aspirin",
+      "sourceName": "MFDS DUR",
+      "sourceUrl": "https://www.drugsafe.or.kr/iwt/ds/ko/useinfo/EgovDurInfoSerJoin.do",
+      "reasonEn": "MFDS DUR lists this pair as a combination to avoid because it raises the risk of bleeding.",
+      "reasonKo": "식약처 DUR 병용금기입니다. 함께 쓰면 출혈 위험이 커집니다."
+    },
+    {
+      "a": "itraconazole",
+      "b": "simvastatin",
+      "sourceName": "MFDS DUR",
+      "sourceUrl": "https://www.drugsafe.or.kr/iwt/ds/ko/useinfo/EgovDurInfoSerJoin.do",
+      "reasonEn": "MFDS DUR lists this pair as contraindicated because it can raise simvastatin levels and the risk of muscle injury.",
+      "reasonKo": "식약처 DUR 병용금기입니다. 심바스타틴 농도가 올라 근육 손상 위험이 커집니다."
+    }
+  ],
+  "caution": [
+    {
+      "a": "ibuprofen",
+      "b": "aspirin",
+      "aspirinMaxMg": 325,
+      "sourceName": "FDA",
+      "sourceUrl": "https://www.fda.gov/drugs/safe-use-aspirin/information-about-taking-ibuprofen-and-aspirin-together",
+      "reasonEn": "Taking them together raises the risk of stomach bleeding and can make low-dose aspirin less protective for your heart.",
+      "reasonKo": "함께 먹으면 위장 출혈 위험이 커지고, 저용량 아스피린이 심장을 보호하는 효과가 줄어들 수 있습니다."
+    }
+  ]
+}

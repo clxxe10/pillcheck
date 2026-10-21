@@ -1,0 +1,29 @@
+{
+  "cautionRatio": 0.7,
+  "ingredients": [
+    {
+      "name": "acetaminophen",
+      "maxDailyMg": 4000,
+      "sourceName": "FDA",
+      "sourceUrl": "https://www.fda.gov/consumers/consumer-updates/dont-double-acetaminophen"
+    },
+    {
+      "name": "ibuprofen",
+      "maxDailyMg": 3200,
+      "sourceName": "FDA",
+      "sourceUrl": "https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=00872852-680a-41b3-901b-b991b12a176d"
+    },
+    {
+      "name": "aspirin",
+      "maxDailyMg": 4000,
+      "sourceName": "FDA",
+      "sourceUrl": "https://www.fda.gov/drugs/safe-use-aspirin"
+    },
+    {
+      "name": "pseudoephedrine",
+      "maxDailyMg": 240,
+      "sourceName": "NIH",
+      "sourceUrl": "https://medlineplus.gov/druginfo/meds/a682619.html"
+    }
+  ]
+}

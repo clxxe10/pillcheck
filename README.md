@@ -23,8 +23,9 @@ Used only when you upload your own photos. Keys stay on the server (`GEMINI_API_
 | `GEMINI_MODEL` | `gemini-3.8-flash` | Free-tier Flash |
 | `ANTHROPIC_API_KEY` | — | [Anthropic Console](https://console.anthropic.com/) |
 | `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | |
+| `DATA_GO_KR_KEY` | — | Optional. MFDS DUR combination check. Without it, local rules are used. |
 
-Both providers share the same prompt and JSON shape in `src/lib/ai/`. Photos and results are not stored on the server.
+Both providers share the same prompt and JSON shape in `src/lib/ai/`. Photos and results are not stored on the server. `POST /api/safety` checks duplicates, daily limits, and combinations from rules and official tables. It does not call a model.
 
 ## Screens
 

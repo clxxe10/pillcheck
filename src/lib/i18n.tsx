@@ -118,17 +118,29 @@ const en = {
     bedtime: "Bedtime",
   },
   alerts: {
-    combine: {
-      label: "Do not combine",
-      homeTitle: "Ibuprofen + Aspirin",
-      title: "Ibuprofen + Aspirin",
-      body: "Taking them together raises the risk of stomach bleeding and can make low-dose aspirin less protective for your heart.",
-    },
+    source: "Source: {name}",
     duplicate: {
       label: "Duplicate ingredient",
-      homeTitle: "Tylenol and Coldaewon Day both contain acetaminophen",
-      title: "Both contain acetaminophen",
-      body: "Together that is up to 2,800 mg a day, close to the daily limit for many adults.",
+      homeTitle: "{a} and {b} both contain {ingredient}",
+      homeTitleMore: "{a} and {n} more contain {ingredient}",
+      title: "Both contain {ingredient}",
+      body: "{ingredient} is in more than one of these medicines, so the doses add up.",
+    },
+    daily: {
+      label: "Daily limit",
+      homeTitle: "{ingredient} · {total} mg a day",
+      titleCaution: "{ingredient} is near the daily limit",
+      titleDanger: "{ingredient} is over the daily limit",
+      bodyCaution: "These add up to {total} mg a day, {pct}% of the {limit} mg adult limit.",
+      bodyDanger: "These add up to {total} mg a day, over the {limit} mg adult limit.",
+    },
+    contraindicated: {
+      label: "Do not combine",
+      body: "This combination is listed as one to avoid.",
+    },
+    caution: {
+      label: "Use caution",
+      body: "This combination needs extra care.",
     },
   },
 };
@@ -238,17 +250,29 @@ const ko: typeof en = {
     bedtime: "취침",
   },
   alerts: {
-    combine: {
-      label: "함께 복용 금지",
-      homeTitle: "Ibuprofen + Aspirin",
-      title: "Ibuprofen + Aspirin",
-      body: "함께 먹으면 위장 출혈 위험이 커지고, 저용량 아스피린이 심장을 보호하는 효과가 줄어들 수 있습니다.",
-    },
+    source: "출처: {name}",
     duplicate: {
       label: "성분 중복",
-      homeTitle: "타이레놀과 콜대원데이에 아세트아미노펜이 함께 들어 있습니다",
-      title: "둘 다 아세트아미노펜이 들어 있습니다",
-      body: "합치면 하루에 최대 2,800 mg으로, 많은 성인의 하루 허용량에 가깝습니다.",
+      homeTitle: "{a}와 {b}에 {ingredient} 성분이 함께 들어 있습니다",
+      homeTitleMore: "{a} 외 {n}개에 {ingredient} 성분이 함께 들어 있습니다",
+      title: "둘 다 {ingredient} 성분이 들어 있습니다",
+      body: "{ingredient} 성분이 약 두 개 이상에 들어 있어 용량이 합쳐집니다.",
+    },
+    daily: {
+      label: "1일 최대 용량",
+      homeTitle: "{ingredient} · 하루 {total} mg",
+      titleCaution: "{ingredient}이 하루 한도에 가깝습니다",
+      titleDanger: "{ingredient}이 하루 한도를 넘습니다",
+      bodyCaution: "합치면 하루 {total} mg으로, 성인 한도 {limit} mg의 {pct}%입니다.",
+      bodyDanger: "합치면 하루 {total} mg으로, 성인 한도 {limit} mg을 넘습니다.",
+    },
+    contraindicated: {
+      label: "함께 복용 금지",
+      body: "함께 쓰지 않도록 안내된 조합입니다.",
+    },
+    caution: {
+      label: "주의해서 함께 복용",
+      body: "함께 쓸 때 주의가 필요한 조합입니다.",
     },
   },
 };

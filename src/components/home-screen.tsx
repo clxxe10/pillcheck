@@ -14,7 +14,6 @@ import {
 import { CameraIcon, ChevronIcon, InfoIcon, PillIcon, ScanIcon } from "@/components/icons";
 import { SummaryOrb } from "@/components/orb";
 import {
-  alertCopy,
   clinicCountLabel,
   displayName,
   formatClock,
@@ -22,6 +21,7 @@ import {
   issueCountLabel,
   medicineCount,
   slotTimes,
+  warningCopy,
 } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
 import { nextDoseHours } from "@/lib/mock";
@@ -312,12 +312,8 @@ function StatCard({
 
 function HomeAlert({ alert }: { alert: SafetyAlert }) {
   const { lang, t } = useTranslation();
-  const copy = alertCopy(alert, lang, {
-    label: t(`alerts.${alert.id}.label`),
-    homeTitle: t(`alerts.${alert.id}.homeTitle`),
-    title: t(`alerts.${alert.id}.title`),
-    body: t(`alerts.${alert.id}.body`),
-  });
+  const { medicines } = useSession();
+  const copy = warningCopy(alert, medicines, lang, t);
   return (
     <Link
       href="/results"

@@ -1,6 +1,8 @@
 "use client";
 
-import { sampleAlerts, samplePhotos, sampleResult } from "@/lib/mock";
+import { samplePhotos, sampleResult } from "@/lib/mock";
+import { checkSafety } from "@/lib/safety";
+import { requestSafety } from "@/lib/safety-client";
 import type { Medicine, SafetyAlert } from "@/types";
 import { useSyncExternalStore } from "react";
 
@@ -20,12 +22,13 @@ type SessionState = {
 };
 
 function demoState(hasResults: boolean): SessionState {
+  const medicines = sampleResult().medicines;
   return {
     hasResults,
     source: "demo",
     photos: samplePhotos.map(({ filename, clinic }) => ({ filename, clinic })),
-    medicines: sampleResult().medicines,
-    alerts: sampleAlerts,
+    medicines,
+    alerts: checkSafety(medicines),
   };
 }
 
@@ -38,12 +41,17 @@ function readStored(): SessionState | null {
   try {
     const parsed = JSON.parse(raw) as Partial<SessionState>;
     if (!parsed || !Array.isArray(parsed.medicines) || !Array.isArray(parsed.photos)) return null;
+    const medicines = parsed.medicines as Medicine[];
+    const storedAlerts = Array.isArray(parsed.alerts) ? parsed.alerts : [];
+    const alerts = storedAlerts.every((alert) => alert && typeof alert.kind === "string")
+      ? (storedAlerts as SafetyAlert[])
+      : checkSafety(medicines);
     return {
       hasResults: Boolean(parsed.hasResults),
       source: parsed.source === "ai" ? "ai" : "demo",
       photos: parsed.photos,
-      medicines: parsed.medicines,
-      alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
+      medicines,
+      alerts,
     };
   } catch {
     return null;
@@ -64,34 +72,45 @@ function emit(next: SessionState) {
   listeners.forEach((listener) => listener());
 }
 
+let safetyToken = 0;
+
+function publishMedicines(medicines: Medicine[], patch: Partial<SessionState> = {}) {
+  const token = ++safetyToken;
+  emit({
+    ...state,
+    ...patch,
+    medicines,
+    alerts: checkSafety(medicines),
+  });
+  void requestSafety(medicines).then((alerts) => {
+    if (token !== safetyToken) return;
+    emit({ ...state, alerts });
+  });
+}
+
 export function completeAnalysis(result: {
   source: ResultSource;
   photos: SessionPhoto[];
   medicines: Medicine[];
+  alerts: SafetyAlert[];
 }) {
+  safetyToken += 1;
   emit({
     hasResults: result.medicines.length > 0,
     source: result.source,
     photos: result.photos,
     medicines: result.medicines,
-    alerts: result.source === "demo" ? sampleAlerts : [],
+    alerts: result.alerts,
   });
 }
 
 export function updateMedicine(medicine: Medicine) {
-  emit({
-    ...state,
-    medicines: state.medicines.map((item) => (item.id === medicine.id ? medicine : item)),
-  });
+  publishMedicines(state.medicines.map((item) => (item.id === medicine.id ? medicine : item)));
 }
 
 export function deleteMedicine(id: string) {
   const medicines = state.medicines.filter((item) => item.id !== id);
-  emit({
-    ...state,
-    medicines,
-    hasResults: medicines.length > 0 && state.hasResults,
-  });
+  publishMedicines(medicines, { hasResults: medicines.length > 0 && state.hasResults });
 }
 
 export function useSession() {

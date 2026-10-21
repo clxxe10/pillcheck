@@ -26,15 +26,22 @@ export type Medicine = {
 
 export type AlertSeverity = "danger" | "warning";
 
+export type WarningKind = "duplicate" | "daily" | "contraindicated" | "caution";
+
+/** A rule-based warning. Copy is rendered from `kind` so it stays in both languages. */
 export type SafetyAlert = {
   id: string;
+  kind: WarningKind;
   severity: AlertSeverity;
-  label: string;
-  /** Shorter line used on the home alert row. */
-  homeTitle: string;
-  title: string;
-  body: string;
+  sourceName: string;
+  sourceUrl: string;
   medicineIds: string[];
+  /** Canonical ingredient, or a sorted pair (`ibuprofen+aspirin`). */
+  ingredient: string;
+  totalMg: number | null;
+  limitMg: number | null;
+  reasonEn: string;
+  reasonKo: string;
 };
 
 export type UnreadableReason = "blurry" | "glare" | "cropped" | "not_medicine" | "other";

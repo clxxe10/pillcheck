@@ -14,7 +14,6 @@ import { ChevronIcon, PencilIcon, PinIcon } from "@/components/icons";
 import { EditSheet } from "@/components/edit-sheet";
 import { LimeRule, SummaryOrb } from "@/components/orb";
 import {
-  alertCopy,
   displayName,
   doseAmount,
   doseLine,
@@ -26,11 +25,14 @@ import {
   slotOrder,
   slotTimes,
   summaryLabel,
+  warningCopy,
 } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
 import type { DoseSlot, Medicine, SafetyAlert } from "@/types";
 import { useState } from "react";
+
+const sourceStyle = { fontWeight: 400, fontSize: 13, lineHeight: 1.3, color: "#6B6B72", textDecoration: "none" };
 
 const mobileOrb = { top: -70, right: -60, width: 300, height: 240 };
 const desktopOrb = { top: -90, right: -70, width: 420, height: 300 };
@@ -47,12 +49,7 @@ export function ResultsScreen() {
   async function share() {
     const text = alerts
       .map((alert) => {
-        const copy = alertCopy(alert, lang, {
-          label: t(`alerts.${alert.id}.label`),
-          homeTitle: t(`alerts.${alert.id}.homeTitle`),
-          title: t(`alerts.${alert.id}.title`),
-          body: t(`alerts.${alert.id}.body`),
-        });
+        const copy = warningCopy(alert, medicines, lang, t);
         return `${copy.label}: ${copy.title}\n${copy.body}`;
       })
       .join("\n\n");
@@ -216,12 +213,8 @@ function AlertSummary({
 
 function ResultAlert({ alert, medicines }: { alert: SafetyAlert; medicines: Medicine[] }) {
   const { t, lang } = useTranslation();
-  const copy = alertCopy(alert, lang, {
-    label: t(`alerts.${alert.id}.label`),
-    homeTitle: t(`alerts.${alert.id}.homeTitle`),
-    title: t(`alerts.${alert.id}.title`),
-    body: t(`alerts.${alert.id}.body`),
-  });
+  const copy = warningCopy(alert, medicines, lang, t);
+  const source = t("alerts.source").replace("{name}", alert.sourceName);
   return (
     <div
       className="py-4 lg:py-[18px]"
@@ -244,6 +237,13 @@ function ResultAlert({ alert, medicines }: { alert: SafetyAlert; medicines: Medi
       <p className="leading-[1.45] lg:leading-[1.5]" style={{ margin: 0, fontWeight: 400, fontSize: 16, color: "#4A4A50" }}>
         {copy.body}
       </p>
+      {alert.sourceUrl ? (
+        <a href={alert.sourceUrl} target="_blank" rel="noreferrer" style={sourceStyle}>
+          {source}
+        </a>
+      ) : (
+        <span style={sourceStyle}>{source}</span>
+      )}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 2 }}>
         {alert.medicineIds.map((id) => {
           const medicine = medicines.find((item) => item.id === id);

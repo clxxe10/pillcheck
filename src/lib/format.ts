@@ -1,5 +1,6 @@
 import type { Lang } from "@/lib/i18n";
-import type { DoseSlot, Medicine } from "@/types";
+import { ingredientLabel } from "@/lib/safety";
+import type { DoseSlot, Medicine, SafetyAlert } from "@/types";
 
 export const slotOrder: DoseSlot[] = ["morning", "lunch", "evening", "bedtime"];
 
@@ -157,18 +158,48 @@ export function resultsMeta(photoCount: number, date: string, lang: Lang) {
   return `${date} · ${photoCountLabel(photoCount, lang)}`;
 }
 
-export function alertCopy<T extends { id: string; label: string; homeTitle: string; title: string; body: string }>(
-  alert: T,
-  lang: Lang,
-  translated: { label: string; homeTitle: string; title: string; body: string },
-) {
-  if (lang === "en") {
+function fill(template: string, vars: Record<string, string | number>) {
+  return template.replace(/\{(\w+)\}/g, (_, key: string) => String(vars[key] ?? ""));
+}
+
+/** Turns a rule warning into the sentence shown on the card. */
+export function warningCopy(alert: SafetyAlert, medicines: Medicine[], lang: Lang, t: (key: string) => string) {
+  const names = alert.medicineIds
+    .map((id) => medicines.find((item) => item.id === id))
+    .filter((item): item is Medicine => Boolean(item))
+    .map((item) => shortName(item, lang));
+  const ingredient = ingredientLabel(alert.ingredient, lang);
+  const a = names[0] ?? ingredient;
+  const b = names[1] ?? "";
+  const total = (alert.totalMg ?? 0).toLocaleString("en-US");
+  const limit = (alert.limitMg ?? 0).toLocaleString("en-US");
+  const pct = alert.limitMg ? Math.round(((alert.totalMg ?? 0) / alert.limitMg) * 100) : 0;
+  const reason = (lang === "ko" ? alert.reasonKo : alert.reasonEn).trim();
+  const pair = a && b ? `${a} + ${b}` : a;
+
+  if (alert.kind === "duplicate") {
+    const homeKey = names.length > 2 ? "alerts.duplicate.homeTitleMore" : "alerts.duplicate.homeTitle";
     return {
-      label: alert.label,
-      homeTitle: alert.homeTitle,
-      title: alert.title,
-      body: alert.body,
+      label: t("alerts.duplicate.label"),
+      homeTitle: fill(t(homeKey), { a, b, n: Math.max(names.length - 1, 0), ingredient }),
+      title: fill(t("alerts.duplicate.title"), { ingredient }),
+      body: fill(t("alerts.duplicate.body"), { ingredient }),
     };
   }
-  return translated;
+  if (alert.kind === "daily") {
+    const over = alert.severity === "danger";
+    return {
+      label: t("alerts.daily.label"),
+      homeTitle: fill(t("alerts.daily.homeTitle"), { ingredient, total }),
+      title: fill(t(over ? "alerts.daily.titleDanger" : "alerts.daily.titleCaution"), { ingredient }),
+      body: fill(t(over ? "alerts.daily.bodyDanger" : "alerts.daily.bodyCaution"), { total, limit, pct }),
+    };
+  }
+  const kind = alert.kind === "contraindicated" ? "contraindicated" : "caution";
+  return {
+    label: t(`alerts.${kind}.label`),
+    homeTitle: pair,
+    title: pair,
+    body: reason || t(`alerts.${kind}.body`),
+  };
 }
