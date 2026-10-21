@@ -10,6 +10,16 @@ const DEFAULT_MODEL = "claude-sonnet-5-5";
 type ClaudeImageType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 const CLAUDE_IMAGE_TYPES: ClaudeImageType[] = ["image/jpeg", "image/png", "image/gif", "image/webp"];
 
+function safeProviderDetail(error: { message: string; error?: unknown }) {
+  const nested = error.error as { error?: { message?: string } } | undefined;
+  const detail = nested?.error?.message || error.message;
+  return detail
+    .replace(/sk-ant-[A-Za-z0-9_-]+/g, "[redacted]")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 240);
+}
+
 export async function runClaude({ prompt, images, signal, timeoutMs }: ProviderRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new AiError("not_configured", "ANTHROPIC_API_KEY is not set.");
@@ -26,7 +36,6 @@ export async function runClaude({ prompt, images, signal, timeoutMs }: ProviderR
       {
         model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
         max_tokens: 4096,
-        temperature: 0,
         output_config: {
           format: { type: "json_schema", schema: extractSchema },
         },
@@ -64,7 +73,7 @@ export async function runClaude({ prompt, images, signal, timeoutMs }: ProviderR
       if (error.status === 401 || error.status === 403) {
         throw new AiError("not_configured", "Claude rejected the API key.");
       }
-      throw new AiError("provider_error", `Claude error ${error.status ?? "unknown"}.`);
+      throw new AiError("provider_error", `Claude error ${error.status ?? "unknown"}. ${safeProviderDetail(error)}`);
     }
     throw error;
   }

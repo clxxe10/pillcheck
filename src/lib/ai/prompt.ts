@@ -77,8 +77,8 @@ How Korean pharmacy labels are laid out:
 
 For each medicine return:
 - name: the name exactly as printed, in the original language (usually Korean). Keep the strength if printed.
-- nameEn: English name. Use the known English brand if there is one (타이레놀정500밀리그램 → "Tylenol 500 mg"), otherwise the English generic name. Write strength with a space before the unit ("500 mg").
-- ingredient: active ingredient(s) in English generic names with strength, comma separated (e.g. "Acetaminophen 325 mg, pseudoephedrine 30 mg").
+- nameEn: English name. Use the known English brand if there is one (타이레놀정500밀리그램 → "Tylenol 500 mg"), otherwise the English generic name plus strength. Write strength with a space before the unit ("500 mg"). Do not translate the dosage form (정, 캡슐, 장용정) into the name: 아스피린장용정 100mg → "Aspirin 100 mg", not "Aspirin enteric-coated 100 mg".
+- ingredient: active ingredient(s) in English generic names with strength, comma separated (e.g. "Acetaminophen 325 mg, pseudoephedrine 30 mg"). If the label says 저용량, include it as "low dose": 아스피린 100mg (저용량) → "Aspirin, low dose 100 mg".
 - dose: 1회 투약량 exactly as printed, with its unit (e.g. "1정").
 - timesPerDay: 1일 투여횟수 as an integer.
 - days: 총 투약일수 as an integer. Use 0 if it is not printed or the medicine is ongoing.
