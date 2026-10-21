@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="_ds/ios-26-design-system-42d855f6-2df1-40d2-8a2c-96945eb62cbc/colors_and_type.css">
+<link rel="stylesheet" href="_ds/ios-26-design-system-42d855f6-2df1-40d2-8a2c-96945eb62cbc/fonts/README.css">
+<script src="_ds/ios-26-design-system-42d855f6-2df1-40d2-8a2c-96945eb62cbc/_ds_bundle.js"></script>
+<style>body{margin:0;background:#e9e6df;font-family:var(--font-sf-pro);-webkit-font-smoothing:antialiased}a{color:#14213D}a:hover{color:#0F3D3E}*{box-sizing:border-box}</style>
+</helmet>
+<section id="t1" style="padding:40px 44px 40px">
+  <div style="display:flex;align-items:baseline;gap:10px;margin:0 0 8px">
+    <a href="#t1" style="font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none">1</a>
+    <span style="font:600 13px/1.2 var(--font-sf-pro);color:#1a1a1a">Results screen — two visual directions</span>
+  </div>
+  <p style="margin:0 0 24px;font:13px/1.5 var(--font-sf-pro);color:rgba(0,0,0,.55);max-width:760px">Same data and content in both. Shown at full scroll length (390 px). Amber and red appear only on safety alerts.</p>
+  <div style="display:flex;flex-wrap:wrap;gap:40px;align-items:flex-start">
+
+    <!-- ============ 1a ============ -->
+    <div id="1a" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 var(--font-sf-pro);color:rgba(0,0,0,.55)"><a href="#1a" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none">1a</a>Ink &amp; Lime — bento grid, dark summary tile, SF Pro heavy</div>
+      <div style="width:390px;background:#F5F2EB;border-radius:44px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.10),0 0 0 1px rgba(0,0,0,.06);position:relative;color:#14213D">
+        <!-- status + header -->
+        <div style="position:sticky;top:0;z-index:2;background:rgba(245,242,235,.72);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px)">
+          <div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 32px 0 40px;font:600 17px var(--font-sf-pro)"><span>9:41</span><span style="display:flex;gap:6px;align-items:center"><span style="width:18px;height:11px;border-radius:2px;background:#14213D;opacity:.9"></span><span style="width:25px;height:12px;border-radius:4px;border:1.5px solid #14213D;padding:1.5px"><span style="display:block;height:100%;width:80%;background:#14213D;border-radius:1.5px"></span></span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 16px 12px">
+            <button style="height:44px;min-width:44px;padding:0 16px 0 10px;border:0;border-radius:9999px;background:rgba(255,255,255,.7);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),inset 0 -1px 0 rgba(0,0,0,.06),0 4px 14px rgba(20,33,61,.08);font:600 17px var(--font-sf-pro);color:#14213D;display:flex;align-items:center;gap:4px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>Scan</button>
+            <div style="display:flex;padding:3px;border-radius:9999px;background:rgba(20,33,61,.08)">
+              <span style="height:38px;min-width:52px;display:flex;align-items:center;justify-content:center;border-radius:9999px;background:#fff;box-shadow:0 2px 8px rgba(20,33,61,.12);font:700 15px var(--font-sf-pro)">EN</span>
+              <span style="height:38px;min-width:52px;display:flex;align-items:center;justify-content:center;border-radius:9999px;font:600 15px var(--font-sf-pro);color:#3B4560">한국어</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:4px 16px 0">
+          <p style="margin:0;font:600 15px var(--font-sf-pro);color:#3B4560;letter-spacing:.02em">CHECKED TODAY, 9:38 AM</p>
+          <h1 style="margin:4px 0 4px;font:800 40px/1.05 var(--font-sf-pro);letter-spacing:-.025em;text-wrap:balance">Your medicine check</h1>
+          <p style="margin:0 0 20px;font:400 17px/1.4 var(--font-sf-pro);color:#3B4560">6 medicines from 3 clinics, read from 3 photos.</p>
+
+          <!-- bento -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div style="grid-column:span 2;background:#14213D;color:#fff;border-radius:28px;padding:22px 22px 20px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <span style="font:600 15px var(--font-sf-pro);color:#C9D0E0">Safety summary</span>
+                <span style="height:32px;padding:0 12px;border-radius:9999px;background:#FFD7A8;color:#5C2E00;font:700 14px var(--font-sf-pro);display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"></path></svg>Action needed</span>
+              </div>
+              <div style="display:flex;align-items:flex-end;gap:12px">
+                <span style="font:800 88px/0.85 var(--font-sf-pro);letter-spacing:-.04em">2</span>
+                <span style="font:700 26px/1.1 var(--font-sf-pro);letter-spacing:-.01em;padding-bottom:4px">issues<br>found</span>
+              </div>
+              <p style="margin:0;font:400 17px/1.4 var(--font-sf-pro);color:#DDE2EC">Talk to a pharmacist before your next dose.</p>
+            </div>
+            <div style="background:#D4F26A;border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:2px;min-height:118px;justify-content:space-between">
+              <span style="font:600 15px var(--font-sf-pro);color:#2A3A0A">Medicines</span>
+              <span style="font:800 44px/1 var(--font-sf-pro);letter-spacing:-.03em;color:#14213D">6</span>
+            </div>
+            <div style="background:#fff;border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:2px;min-height:118px;justify-content:space-between;box-shadow:0 0 0 1px rgba(20,33,61,.08)">
+              <span style="font:600 15px var(--font-sf-pro);color:#3B4560">Needs review</span>
+              <span style="font:800 44px/1 var(--font-sf-pro);letter-spacing:-.03em">1</span>
+            </div>
+          </div>
+
+          <!-- alerts -->
+          <h2 style="margin:32px 0 12px;font:800 26px var(--font-sf-pro);letter-spacing:-.02em">Safety alerts</h2>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="background:#FDE8E6;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 0 1.5px #F3B7B1 inset">
+              <span style="align-self:flex-start;height:32px;padding:0 12px;border-radius:9999px;background:#B3261E;color:#fff;font:700 14px var(--font-sf-pro);display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M5.6 5.6l12.8 12.8"></path></svg>Do not combine</span>
+              <h3 style="margin:0;font:800 24px/1.15 var(--font-sf-pro);letter-spacing:-.015em;color:#5A0F0A">Ibuprofen + Aspirin</h3>
+              <p style="margin:0;font:400 17px/1.45 var(--font-sf-pro);color:#4A1410">Taking them together raises the risk of stomach bleeding and can make low-dose aspirin less protective for your heart.</p>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <span style="height:34px;padding:0 12px;border-radius:9999px;background:#fff;font:600 15px var(--font-sf-pro);color:#4A1410;display:flex;align-items:center">Ibuprofen · Hanbit ENT</span>
+                <span style="height:34px;padding:0 12px;border-radius:9999px;background:#fff;font:600 15px var(--font-sf-pro);color:#4A1410;display:flex;align-items:center">Aspirin · Green Heart Clinic</span>
+              </div>
+            </div>
+            <div style="background:#FFF1D6;border-radius:28px;padding:20px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 0 1.5px #F2CF8C inset">
+              <span style="align-self:flex-start;height:32px;padding:0 12px;border-radius:9999px;background:#8A4B00;color:#fff;font:700 14px var(--font-sf-pro);display:flex;align-items:center;gap:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="3"></rect><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"></path></svg>Duplicate ingredient</span>
+              <h3 style="margin:0;font:800 24px/1.15 var(--font-sf-pro);letter-spacing:-.015em;color:#4A2800">Acetaminophen in 2 medicines</h3>
+              <div style="background:#fff;border-radius:18px;overflow:hidden">
+                <div style="padding:12px 14px;display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #F2E2C2"><span style="font:600 17px/1.3 var(--font-sf-pro);color:#14213D">Tylenol 500 mg</span><span style="font:400 15px/1.3 var(--font-sf-pro);color:#5B4A2E;text-align:right">Seoul Family Clinic</span></div>
+                <div style="padding:12px 14px;display:flex;justify-content:space-between;gap:12px"><span style="font:600 17px/1.3 var(--font-sf-pro);color:#14213D">Coldaway Day <span style="font-weight:400;color:#5B4A2E">(contains acetaminophen)</span></span><span style="font:400 15px/1.3 var(--font-sf-pro);color:#5B4A2E;text-align:right">Hanbit ENT</span></div>
+              </div>
+              <p style="margin:0;font:400 17px/1.45 var(--font-sf-pro);color:#4A2800">Together that is up to <b>2,800 mg a day</b>, close to the daily limit for many adults.</p>
+            </div>
+            <button style="height:56px;border:0;border-radius:9999px;background:#14213D;color:#fff;font:700 17px var(--font-sf-pro)">Share with my pharmacist</button>
+          </div>
+
+          <!-- schedule -->
+          <h2 style="margin:32px 0 12px;font:800 26px var(--font-sf-pro);letter-spacing:-.02em">Daily schedule</h2>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <sc-for list="{{ slots }}" as="s" hint-placeholder-count="4">
+              <div style="background:#fff;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:0 0 0 1px rgba(20,33,61,.08)">
+                <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font:800 19px var(--font-sf-pro);letter-spacing:-.01em">{{ s.label }}</span><span style="font:600 14px var(--font-sf-pro);color:#3B4560">{{ s.time }}</span></div>
+                <div style="display:flex;flex-direction:column;gap:6px">
+                  <sc-for list="{{ s.meds }}" as="m" hint-placeholder-count="2">
+                    <span style="min-height:32px;padding:5px 12px;border-radius:9999px;background:#EEF0D9;font:600 15px/1.3 var(--font-sf-pro);color:#14213D;display:flex;align-items:center">{{ m }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- medicines -->
+          <h2 style="margin:32px 0 12px;font:800 26px var(--font-sf-pro);letter-spacing:-.02em">Medicines</h2>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <sc-for list="{{ meds }}" as="m" hint-placeholder-count="6">
+              <div style="background:#fff;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px;box-shadow:0 0 0 1px rgba(20,33,61,.08)">
+                <div style="display:flex;gap:12px;align-items:flex-start">
+                  <div style="width:56px;height:56px;flex:none;border-radius:14px;background:repeating-linear-gradient(135deg,#E6E1D6 0 6px,#EFEBE2 6px 12px);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font:600 11px var(--font-sf-mono);color:#5A5446">{{ m.photo }}</div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                    <sc-if value="{{ m.review }}" hint-placeholder-val="{{ false }}"><span style="align-self:flex-start;height:26px;padding:0 10px;border-radius:9999px;background:#14213D;color:#D4F26A;font:700 13px var(--font-sf-pro);display:flex;align-items:center;margin-bottom:4px">Needs review</span></sc-if>
+                    <span style="font:700 19px/1.25 var(--font-sf-pro);letter-spacing:-.01em">{{ m.name }}</span>
+                    <span style="font:400 15px/1.35 var(--font-sf-pro);color:#3B4560">{{ m.ing }}</span>
+                  </div>
+                  <button style="height:44px;padding:0 16px;border:0;border-radius:9999px;background:#EEF0F4;font:600 15px var(--font-sf-pro);color:#14213D;display:flex;align-items:center;gap:6px;flex:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"></path></svg>Edit</button>
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px">
+                  <span style="height:34px;padding:0 12px;border-radius:9999px;background:#F5F2EB;font:600 15px var(--font-sf-pro);display:flex;align-items:center">{{ m.dose }}</span>
+                  <span style="height:34px;padding:0 12px;border-radius:9999px;background:#F5F2EB;font:600 15px var(--font-sf-pro);display:flex;align-items:center">{{ m.freq }}</span>
+                  <span style="height:34px;padding:0 12px;border-radius:9999px;background:#F5F2EB;font:600 15px var(--font-sf-pro);display:flex;align-items:center">{{ m.days }}</span>
+                </div>
+                <span style="font:400 15px var(--font-sf-pro);color:#3B4560">From {{ m.clinic }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="position:sticky;bottom:0;margin-top:28px;padding:12px 16px 30px;background:rgba(245,242,235,.8);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-top:1px solid rgba(20,33,61,.08)">
+          <p style="margin:0;font:500 14px/1.4 var(--font-sf-pro);color:#3B4560;text-align:center;text-wrap:balance">This tool does not replace advice from a doctor or pharmacist.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1b ============ -->
+    <div id="1b" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:baseline;gap:8px;font:400 12px/1.3 var(--font-sf-pro);color:rgba(0,0,0,.55)"><a href="#1b" style="font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none">1b</a>Deep Teal &amp; Lilac — full-bleed hero, timeline schedule, SF Rounded</div>
+      <div style="width:390px;background:#F7F4EE;border-radius:44px;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.10),0 0 0 1px rgba(0,0,0,.06);position:relative;color:#0F2E2F">
+        <!-- hero -->
+        <div style="background:#0F3D3E;color:#fff;border-radius:0 0 36px 36px;padding-bottom:22px">
+          <div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 32px 0 40px;font:600 17px var(--font-sf-pro)"><span>9:41</span><span style="display:flex;gap:6px;align-items:center"><span style="width:18px;height:11px;border-radius:2px;background:#fff"></span><span style="width:25px;height:12px;border-radius:4px;border:1.5px solid #fff;padding:1.5px"><span style="display:block;height:100%;width:80%;background:#fff;border-radius:1.5px"></span></span></span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 16px 0">
+            <span style="font:700 20px var(--font-sf-rounded);letter-spacing:-.01em;display:flex;align-items:center;gap:8px"><span style="width:28px;height:28px;border-radius:9999px;background:#CFC4FF;display:flex;align-items:center;justify-content:center"><span style="width:14px;height:7px;border-radius:9999px;background:#0F3D3E;transform:rotate(-35deg)"></span></span>PillCheck</span>
+            <div style="display:flex;padding:3px;border-radius:9999px;background:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.2)">
+              <span style="height:38px;min-width:52px;display:flex;align-items:center;justify-content:center;border-radius:9999px;background:#fff;color:#0F3D3E;font:700 15px var(--font-sf-pro)">EN</span>
+              <span style="height:38px;min-width:52px;display:flex;align-items:center;justify-content:center;border-radius:9999px;font:600 15px var(--font-sf-pro);color:#E4EEEE">한국어</span>
+            </div>
+          </div>
+          <div style="padding:28px 22px 0;display:flex;flex-direction:column;gap:12px">
+            <span style="font:600 15px var(--font-sf-pro);color:#B7D3D2">6 medicines · 3 clinics · 3 photos</span>
+            <h1 style="margin:0;font:700 44px/1.02 var(--font-sf-rounded);letter-spacing:-.03em;text-wrap:balance">We found <span style="color:#CFC4FF">2 things</span> to check.</h1>
+            <p style="margin:0;font:400 17px/1.45 var(--font-sf-pro);color:#DCEAEA">Talk to a pharmacist before your next dose.</p>
+          </div>
+          <div style="margin:22px 16px 0;padding:4px;border-radius:9999px;background:rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.15);display:grid;grid-template-columns:repeat(3,1fr)">
+            <span style="height:44px;border-radius:9999px;background:#fff;color:#0F3D3E;font:700 16px var(--font-sf-pro);display:flex;align-items:center;justify-content:center;gap:6px">Alerts <span style="min-width:22px;height:22px;border-radius:9999px;background:#B3261E;color:#fff;font:700 13px var(--font-sf-pro);display:flex;align-items:center;justify-content:center">2</span></span>
+            <span style="height:44px;border-radius:9999px;color:#fff;font:600 16px var(--font-sf-pro);display:flex;align-items:center;justify-content:center">Medicines</span>
+            <span style="height:44px;border-radius:9999px;color:#fff;font:600 16px var(--font-sf-pro);display:flex;align-items:center;justify-content:center">Schedule</span>
+          </div>
+        </div>
+
+        <div style="padding:24px 16px 0;display:flex;flex-direction:column;gap:12px">
+          <!-- red -->
+          <div style="background:#fff;border-radius:28px;overflow:hidden;box-shadow:0 8px 24px rgba(15,61,62,.08),0 0 0 1px rgba(15,61,62,.06)">
+            <div style="background:#B3261E;color:#fff;padding:14px 20px;display:flex;align-items:center;gap:10px;font:700 17px var(--font-sf-pro)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M5.6 5.6l12.8 12.8"></path></svg>Do not take together</div>
+            <div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="font:700 26px/1.1 var(--font-sf-rounded);letter-spacing:-.02em">Ibuprofen</span>
+                <span style="width:30px;height:30px;border-radius:9999px;background:#FDE8E6;color:#B3261E;font:800 18px var(--font-sf-pro);display:flex;align-items:center;justify-content:center">+</span>
+                <span style="font:700 26px/1.1 var(--font-sf-rounded);letter-spacing:-.02em">Aspirin</span>
+              </div>
+              <p style="margin:0;font:400 17px/1.45 var(--font-sf-pro);color:#334848">Taking them together raises the risk of stomach bleeding and can make low-dose aspirin less protective for your heart.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div style="background:#F7F4EE;border-radius:18px;padding:12px"><div style="font:600 13px var(--font-sf-pro);color:#4C6060">HANBIT ENT</div><div style="font:600 16px/1.3 var(--font-sf-pro);margin-top:2px">Ibuprofen 400 mg</div></div>
+                <div style="background:#F7F4EE;border-radius:18px;padding:12px"><div style="font:600 13px var(--font-sf-pro);color:#4C6060">GREEN HEART CLINIC</div><div style="font:600 16px/1.3 var(--font-sf-pro);margin-top:2px">Aspirin 100 mg</div></div>
+              </div>
+            </div>
+          </div>
+          <!-- amber -->
+          <div style="background:#fff;border-radius:28px;overflow:hidden;box-shadow:0 8px 24px rgba(15,61,62,.08),0 0 0 1px rgba(15,61,62,.06)">
+            <div style="background:#FFD98A;color:#4A2800;padding:14px 20px;display:flex;align-items:center;gap:10px;font:700 17px var(--font-sf-pro)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"></path><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"></path></svg>Same ingredient twice</div>
+            <div style="padding:18px 20px 20px;display:flex;flex-direction:column;gap:12px">
+              <span style="font:700 26px/1.1 var(--font-sf-rounded);letter-spacing:-.02em">Acetaminophen</span>
+              <p style="margin:0;font:400 17px/1.45 var(--font-sf-pro);color:#334848">Both of these contain it. Together that is up to <b>2,800 mg a day</b>, close to the daily limit for many adults.</p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <div style="background:#F7F4EE;border-radius:18px;padding:12px"><div style="font:600 13px var(--font-sf-pro);color:#4C6060">SEOUL FAMILY CLINIC</div><div style="font:600 16px/1.3 var(--font-sf-pro);margin-top:2px">Tylenol 500 mg</div></div>
+                <div style="background:#F7F4EE;border-radius:18px;padding:12px"><div style="font:600 13px var(--font-sf-pro);color:#4C6060">HANBIT ENT</div><div style="font:600 16px/1.3 var(--font-sf-pro);margin-top:2px">Coldaway Day cold medicine</div></div>
+              </div>
+            </div>
+          </div>
+          <button style="height:56px;border:0;border-radius:9999px;background:#CFC4FF;color:#1E1450;font:700 17px var(--font-sf-pro)">Share with my pharmacist</button>
+
+          <!-- schedule timeline -->
+          <h2 style="margin:24px 4px 0;font:700 28px var(--font-sf-rounded);letter-spacing:-.02em">Today’s schedule</h2>
+          <div style="background:#fff;border-radius:28px;padding:8px 18px;box-shadow:0 0 0 1px rgba(15,61,62,.06)">
+            <sc-for list="{{ slots }}" as="s" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:84px 1fr;gap:12px;padding:14px 0;border-bottom:1px solid #ECE7DD">
+                <div style="display:flex;flex-direction:column;gap:2px"><span style="font:700 17px var(--font-sf-rounded)">{{ s.label }}</span><span style="font:500 14px var(--font-sf-pro);color:#4C6060">{{ s.time }}</span></div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px">
+                  <sc-for list="{{ s.meds }}" as="m" hint-placeholder-count="2">
+                    <span style="min-height:34px;padding:6px 12px;border-radius:9999px;background:#E6F0EF;font:600 15px/1.3 var(--font-sf-pro);color:#0F3D3E;display:flex;align-items:center">{{ m }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+
+          <!-- meds -->
+          <h2 style="margin:24px 4px 0;font:700 28px var(--font-sf-rounded);letter-spacing:-.02em">Medicines</h2>
+          <div style="background:#fff;border-radius:28px;overflow:hidden;box-shadow:0 0 0 1px rgba(15,61,62,.06)">
+            <sc-for list="{{ meds }}" as="m" hint-placeholder-count="6">
+              <div style="padding:16px 18px;display:flex;gap:14px;align-items:flex-start;border-bottom:1px solid #ECE7DD">
+                <div style="width:52px;height:64px;flex:none;border-radius:14px;background:repeating-linear-gradient(135deg,#E3ECEA 0 6px,#EEF3F2 6px 12px);display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px;font:600 11px var(--font-sf-mono);color:#3F5656">{{ m.photo }}</div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                  <span style="font:700 18px/1.25 var(--font-sf-pro)">{{ m.name }}</span>
+                  <span style="font:400 15px/1.35 var(--font-sf-pro);color:#3F5656">{{ m.ing }}</span>
+                  <span style="font:600 15px/1.35 var(--font-sf-pro);color:#0F3D3E;margin-top:2px">{{ m.dose }} · {{ m.freq }} · {{ m.days }}</span>
+                  <span style="font:400 14px/1.35 var(--font-sf-pro);color:#4C6060">{{ m.clinic }}</span>
+                  <sc-if value="{{ m.review }}" hint-placeholder-val="{{ false }}"><span style="align-self:flex-start;margin-top:6px;height:28px;padding:0 10px;border-radius:9999px;background:#CFC4FF;color:#1E1450;font:700 13px var(--font-sf-pro);display:flex;align-items:center;gap:5px"><span style="width:7px;height:7px;border-radius:9999px;background:#1E1450"></span>Needs review · dose unclear</span></sc-if>
+                </div>
+                <button aria-label="Edit" style="width:44px;height:44px;flex:none;border:0;border-radius:9999px;background:#E6F0EF;color:#0F3D3E;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"></path></svg></button>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="position:sticky;bottom:0;margin-top:28px;padding:12px 16px 30px;background:rgba(247,244,238,.82);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-top:1px solid rgba(15,61,62,.08)">
+          <p style="margin:0;font:500 14px/1.4 var(--font-sf-pro);color:#3F5656;text-align:center;text-wrap:balance">This tool does not replace advice from a doctor or pharmacist.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p style="margin:24px 0 0;font:12px/1.5 var(--font-sf-pro);color:rgba(0,0,0,.5)">Try next: "build all 5 screens in <a href="#1a">1a</a>" · "<a href="#1b">1b</a> layout with the lime accent from <a href="#1a">1a</a>" · "make alerts in <a href="#1a">1a</a> louder"</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals() {
+    const meds = [
+      { name: 'Tylenol Extra Strength', ing: 'Acetaminophen 500 mg', dose: '1 tablet', freq: '3× a day', days: '5 days', clinic: 'Seoul Family Clinic · Photo 1', photo: 'IMG 1', review: false },
+      { name: 'Coldaway Day', ing: 'Acetaminophen 325 mg, pseudoephedrine 30 mg', dose: '2 tablets', freq: '2× a day', days: '3 days', clinic: 'Hanbit ENT · Photo 2', photo: 'IMG 2', review: false },
+      { name: 'Ibuprofen 400 mg', ing: 'Ibuprofen 400 mg', dose: '1 tablet', freq: '3× a day', days: '5 days', clinic: 'Hanbit ENT · Photo 2', photo: 'IMG 2', review: false },
+      { name: 'Cetirizine 10 mg', ing: 'Cetirizine 10 mg', dose: '1 tablet', freq: '1× a day', days: '5 days', clinic: 'Hanbit ENT · Photo 2', photo: 'IMG 2', review: false },
+      { name: 'Aspirin 100 mg', ing: 'Aspirin (low dose) 100 mg', dose: '1 tablet', freq: '1× a day', days: 'Ongoing', clinic: 'Green Heart Clinic · Photo 3', photo: 'IMG 3', review: true },
+      { name: 'Omeprazole 20 mg', ing: 'Omeprazole 20 mg', dose: '1 capsule', freq: '1× a day', days: '30 days', clinic: 'Green Heart Clinic · Photo 3', photo: 'IMG 3', review: false },
+    ];
+    const slots = [
+      { label: 'Morning', time: '8:00 AM', meds: ['Omeprazole', 'Tylenol', 'Coldaway Day', 'Ibuprofen', 'Aspirin'] },
+      { label: 'Lunch', time: '12:30 PM', meds: ['Tylenol', 'Ibuprofen'] },
+      { label: 'Evening', time: '6:30 PM', meds: ['Tylenol', 'Coldaway Day', 'Ibuprofen'] },
+      { label: 'Bedtime', time: '10:00 PM', meds: ['Cetirizine'] },
+    ];
+    return { meds, slots };
+  }
+}
+</script>
+</body>
+</html>

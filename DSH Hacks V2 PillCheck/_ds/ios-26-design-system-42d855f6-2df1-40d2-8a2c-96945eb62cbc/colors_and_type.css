@@ -1,0 +1,258 @@
+/* =============================================================================
+ * iOS 26 / iPadOS 26 — Colors & Type tokens
+ * Source: Apple iOS and iPadOS 26 (Community) Figma UI Kit
+ * ---------------------------------------------------------------------------
+ *  Notes:
+ *  - All values are lifted from the Figma metadata (top usage colors + the
+ *    /Colors page swatch grid). Increased-contrast values appear under their
+ *    own data-contrast="high" selector.
+ *  - Type uses the system-font stack with Inter as the cross-platform fallback.
+ *  - Light is the default; switch to dark with [data-theme="dark"] or
+ *    @media (prefers-color-scheme: dark).
+ * ===========================================================================*/
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap");
+
+:root {
+  /* ---------- System colors — LIGHT ------------------------------------ */
+  --ios-red:        rgb(255 59 48);
+  --ios-orange:     rgb(255 149 0);
+  --ios-yellow:     rgb(255 204 0);
+  --ios-green:      rgb(52 199 89);
+  --ios-mint:       rgb(0 199 190);
+  --ios-teal:       rgb(48 176 199);
+  --ios-cyan:       rgb(50 173 230);
+  --ios-blue:       rgb(0 122 255);
+  --ios-indigo:     rgb(88 86 214);
+  --ios-purple:     rgb(175 82 222);
+  --ios-pink:       rgb(255 45 85);
+  --ios-brown:      rgb(162 132 94);
+
+  /* Grays — same name in both modes, value flips */
+  --ios-gray:       rgb(142 142 147);
+  --ios-gray-2:     rgb(174 174 178);
+  --ios-gray-3:     rgb(199 199 204);
+  --ios-gray-4:     rgb(209 209 214);
+  --ios-gray-5:     rgb(229 229 234);
+  --ios-gray-6:     rgb(242 242 247);
+
+  /* Semantic labels (foreground) */
+  --label:                 rgb(0 0 0);
+  --label-secondary:       rgb(60 60 67 / 0.60);
+  --label-tertiary:        rgb(60 60 67 / 0.30);
+  --label-quaternary:      rgb(60 60 67 / 0.18);
+  --label-on-color:        rgb(255 255 255);     /* foreground on a tinted button */
+
+  /* Semantic fills (background) */
+  --fill-primary:          rgb(120 120 128 / 0.20);
+  --fill-secondary:        rgb(120 120 128 / 0.16);
+  --fill-tertiary:         rgb(118 118 128 / 0.12);
+  --fill-quaternary:       rgb(116 116 128 / 0.08);
+
+  /* Backgrounds */
+  --background:            rgb(255 255 255);
+  --background-secondary:  rgb(242 242 247);
+  --background-tertiary:   rgb(255 255 255);
+
+  --grouped-background:            rgb(242 242 247);
+  --grouped-background-secondary:  rgb(255 255 255);
+  --grouped-background-tertiary:   rgb(242 242 247);
+
+  /* Separators */
+  --separator:             rgb(60 60 67 / 0.29);   /* hairline */
+  --separator-opaque:      rgb(198 198 200);
+
+  /* Accent (tinted controls, links, default focus) */
+  --accent:                var(--ios-blue);
+  --destructive:           var(--ios-red);
+
+  /* ---------- Materials — LIQUID GLASS (light) ------------------------- */
+  --material-ultrathin:    linear-gradient(rgb(255 255 255 / 0.25), rgb(255 255 255 / 0.25)),
+                           linear-gradient(rgb(255 255 255 / 0.10), rgb(255 255 255 / 0.10));
+  --material-thin:         linear-gradient(rgb(255 255 255 / 0.40), rgb(255 255 255 / 0.40)),
+                           linear-gradient(rgb(255 255 255 / 0.20), rgb(255 255 255 / 0.20));
+  --material-regular:      linear-gradient(rgb(255 255 255 / 0.60), rgb(255 255 255 / 0.60)),
+                           linear-gradient(rgb(255 255 255 / 0.25), rgb(255 255 255 / 0.25));
+  --material-thick:        linear-gradient(rgb(255 255 255 / 0.80), rgb(255 255 255 / 0.80)),
+                           linear-gradient(rgb(255 255 255 / 0.35), rgb(255 255 255 / 0.35));
+  --material-chrome:       rgb(245 245 245 / 0.85);
+
+  --blur-ultrathin:        blur(60px);
+  --blur-thin:             blur(80px);
+  --blur-regular:          blur(100px);
+  --blur-thick:            blur(120px);
+
+  --glass-stroke-top:      rgb(255 255 255 / 0.40);
+  --glass-stroke-bottom:   rgb(0 0 0 / 0.10);
+  --glass-shadow:          0 8px 24px rgb(0 0 0 / 0.10);
+
+  /* ---------- Spacing, radii, motion ----------------------------------- */
+  --radius-xs:    4px;
+  --radius-sm:    8px;
+  --radius-md:    12px;
+  --radius-lg:    18px;
+  --radius-xl:    22px;
+  --radius-xxl:   28px;
+  --radius-card:  10px;       /* grouped-list card */
+  --radius-sheet-top: 10px;
+  --radius-sheet-top-stacked: 38px;
+  --radius-app-icon: 22.37%;  /* continuous corner approximation */
+  --radius-capsule: 9999px;
+
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;          /* iPhone screen margin */
+  --space-5:  20px;          /* iPad compact screen margin */
+  --space-6:  24px;
+  --space-8:  32px;
+
+  --hit-target: 44px;        /* Apple HIG min */
+  --tab-bar-h: 49px;
+  --tab-bar-safe: 34px;
+  --status-bar-h-iphone: 59px;
+  --toolbar-h: 44px;
+  --toolbar-h-compact: 32px;
+
+  --ease-ios:   cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-ios-emph: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast:   180ms;
+  --dur-base:   260ms;
+  --dur-slow:   340ms;
+  --dur-sheet:  560ms;
+
+  /* ---------- Type ------------------------------------------------------ */
+  --font-sf-pro: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "Inter", "Segoe UI", system-ui, sans-serif;
+  --font-sf-rounded: -apple-system-rounded, "SF Pro Rounded", "SF Compact Rounded", ui-rounded, "Inter", system-ui, sans-serif;
+  --font-sf-mono: ui-monospace, "SF Mono", Menlo, "Cascadia Mono", Consolas, monospace;
+
+  /* Dynamic Type — Large (default) text-style scale */
+  --t-large-title:   34px;   --t-large-title-w: 700;  --t-large-title-lh: 41px;  --t-large-title-tr: -0.408px;
+  --t-title-1:       28px;   --t-title-1-w:     700;  --t-title-1-lh:     34px;  --t-title-1-tr:     -0.364px;
+  --t-title-2:       22px;   --t-title-2-w:     700;  --t-title-2-lh:     28px;  --t-title-2-tr:     -0.176px;
+  --t-title-3:       20px;   --t-title-3-w:     600;  --t-title-3-lh:     25px;  --t-title-3-tr:     -0.451px;
+  --t-headline:      17px;   --t-headline-w:    600;  --t-headline-lh:    22px;  --t-headline-tr:    -0.408px;
+  --t-body:          17px;   --t-body-w:        400;  --t-body-lh:        22px;  --t-body-tr:        -0.408px;
+  --t-callout:       16px;   --t-callout-w:     400;  --t-callout-lh:     21px;  --t-callout-tr:     -0.32px;
+  --t-subhead:       15px;   --t-subhead-w:     400;  --t-subhead-lh:     20px;  --t-subhead-tr:     -0.24px;
+  --t-footnote:      13px;   --t-footnote-w:    400;  --t-footnote-lh:    18px;  --t-footnote-tr:    -0.078px;
+  --t-caption-1:     12px;   --t-caption-1-w:   400;  --t-caption-1-lh:   16px;  --t-caption-1-tr:    0px;
+  --t-caption-2:     11px;   --t-caption-2-w:   400;  --t-caption-2-lh:   13px;  --t-caption-2-tr:    0.066px;
+}
+
+/* ---------- System colors — DARK mode override ------------------------- */
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; } }
+[data-theme="dark"],
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ios-red:    rgb(255 69 58);
+    --ios-orange: rgb(255 159 10);
+    --ios-yellow: rgb(255 214 10);
+    --ios-green:  rgb(48 209 88);
+    --ios-mint:   rgb(102 212 207);
+    --ios-teal:   rgb(64 200 224);
+    --ios-cyan:   rgb(100 210 255);
+    --ios-blue:   rgb(10 132 255);
+    --ios-indigo: rgb(94 92 230);
+    --ios-purple: rgb(191 90 242);
+    --ios-pink:   rgb(255 55 95);
+    --ios-brown:  rgb(172 142 104);
+
+    --ios-gray:   rgb(142 142 147);
+    --ios-gray-2: rgb(99 99 102);
+    --ios-gray-3: rgb(72 72 74);
+    --ios-gray-4: rgb(58 58 60);
+    --ios-gray-5: rgb(44 44 46);
+    --ios-gray-6: rgb(28 28 30);
+
+    --label:            rgb(255 255 255);
+    --label-secondary:  rgb(235 235 245 / 0.60);
+    --label-tertiary:   rgb(235 235 245 / 0.30);
+    --label-quaternary: rgb(235 235 245 / 0.18);
+
+    --fill-primary:    rgb(120 120 128 / 0.36);
+    --fill-secondary:  rgb(120 120 128 / 0.32);
+    --fill-tertiary:   rgb(118 118 128 / 0.24);
+    --fill-quaternary: rgb(118 118 128 / 0.18);
+
+    --background:           rgb(0 0 0);
+    --background-secondary: rgb(28 28 30);
+    --background-tertiary:  rgb(44 44 46);
+
+    --grouped-background:           rgb(0 0 0);
+    --grouped-background-secondary: rgb(28 28 30);
+    --grouped-background-tertiary:  rgb(44 44 46);
+
+    --separator:        rgb(84 84 88 / 0.65);
+    --separator-opaque: rgb(56 56 58);
+
+    --accent:      var(--ios-blue);
+    --destructive: var(--ios-red);
+
+    --material-ultrathin:  linear-gradient(rgb(0 0 0 / 0.25), rgb(0 0 0 / 0.25)),
+                           linear-gradient(rgb(0 0 0 / 0.10), rgb(0 0 0 / 0.10));
+    --material-thin:       linear-gradient(rgb(0 0 0 / 0.40), rgb(0 0 0 / 0.40)),
+                           linear-gradient(rgb(0 0 0 / 0.20), rgb(0 0 0 / 0.20));
+    --material-regular:    linear-gradient(rgb(0 0 0 / 0.60), rgb(0 0 0 / 0.60)),
+                           linear-gradient(rgb(0 0 0 / 0.25), rgb(0 0 0 / 0.25));
+    --material-thick:      linear-gradient(rgb(0 0 0 / 0.80), rgb(0 0 0 / 0.80)),
+                           linear-gradient(rgb(0 0 0 / 0.35), rgb(0 0 0 / 0.35));
+    --material-chrome:     rgb(18 18 18 / 0.85);
+
+    --glass-stroke-top:    rgb(255 255 255 / 0.20);
+    --glass-stroke-bottom: rgb(0 0 0 / 0.30);
+    --glass-shadow:        0 8px 24px rgb(0 0 0 / 0.40);
+  }
+}
+
+/* ---------- Increased-contrast overrides ------------------------------- */
+[data-contrast="high"] {
+  --label-secondary:  rgb(60 60 67 / 0.80);
+  --label-tertiary:   rgb(60 60 67 / 0.55);
+  --label-quaternary: rgb(60 60 67 / 0.40);
+  --separator:        rgb(60 60 67 / 0.55);
+  --ios-blue:         rgb(0 64 221);
+  --ios-red:          rgb(215 0 21);
+  --ios-green:        rgb(36 138 61);
+}
+
+/* ---------- Base reset + type styles ----------------------------------- */
+html, body { background: var(--background); color: var(--label); }
+body { font-family: var(--font-sf-pro); font-weight: 400; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+.t-large-title { font-size: var(--t-large-title); font-weight: var(--t-large-title-w); line-height: var(--t-large-title-lh); letter-spacing: var(--t-large-title-tr); }
+.t-title-1     { font-size: var(--t-title-1);     font-weight: var(--t-title-1-w);     line-height: var(--t-title-1-lh);     letter-spacing: var(--t-title-1-tr); }
+.t-title-2     { font-size: var(--t-title-2);     font-weight: var(--t-title-2-w);     line-height: var(--t-title-2-lh);     letter-spacing: var(--t-title-2-tr); }
+.t-title-3     { font-size: var(--t-title-3);     font-weight: var(--t-title-3-w);     line-height: var(--t-title-3-lh);     letter-spacing: var(--t-title-3-tr); }
+.t-headline    { font-size: var(--t-headline);    font-weight: var(--t-headline-w);    line-height: var(--t-headline-lh);    letter-spacing: var(--t-headline-tr); }
+.t-body        { font-size: var(--t-body);        font-weight: var(--t-body-w);        line-height: var(--t-body-lh);        letter-spacing: var(--t-body-tr); }
+.t-callout     { font-size: var(--t-callout);     font-weight: var(--t-callout-w);     line-height: var(--t-callout-lh);     letter-spacing: var(--t-callout-tr); }
+.t-subhead     { font-size: var(--t-subhead);     font-weight: var(--t-subhead-w);     line-height: var(--t-subhead-lh);     letter-spacing: var(--t-subhead-tr); }
+.t-footnote    { font-size: var(--t-footnote);    font-weight: var(--t-footnote-w);    line-height: var(--t-footnote-lh);    letter-spacing: var(--t-footnote-tr); }
+.t-caption-1   { font-size: var(--t-caption-1);   font-weight: var(--t-caption-1-w);   line-height: var(--t-caption-1-lh);   letter-spacing: var(--t-caption-1-tr); }
+.t-caption-2   { font-size: var(--t-caption-2);   font-weight: var(--t-caption-2-w);   line-height: var(--t-caption-2-lh);   letter-spacing: var(--t-caption-2-tr); }
+
+/* ---------- Material helpers (Liquid Glass) ---------------------------- */
+.material-regular,
+.material-thin,
+.material-thick,
+.material-ultrathin {
+  position: relative;
+  backdrop-filter: var(--blur-regular);
+  -webkit-backdrop-filter: var(--blur-regular);
+  background: var(--material-regular);
+  isolation: isolate;
+}
+.material-thin       { backdrop-filter: var(--blur-thin);       -webkit-backdrop-filter: var(--blur-thin);       background: var(--material-thin); }
+.material-thick      { backdrop-filter: var(--blur-thick);      -webkit-backdrop-filter: var(--blur-thick);      background: var(--material-thick); }
+.material-ultrathin  { backdrop-filter: var(--blur-ultrathin);  -webkit-backdrop-filter: var(--blur-ultrathin);  background: var(--material-ultrathin); }
+
+.liquid-glass {
+  backdrop-filter: var(--blur-regular);
+  -webkit-backdrop-filter: var(--blur-regular);
+  background: var(--material-regular);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-stroke-top),
+    inset 0 -1px 0 0 var(--glass-stroke-bottom),
+    var(--glass-shadow);
+}

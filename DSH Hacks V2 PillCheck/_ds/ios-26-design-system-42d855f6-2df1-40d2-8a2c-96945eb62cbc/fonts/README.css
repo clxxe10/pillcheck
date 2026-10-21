@@ -1,0 +1,31 @@
+/* ============================================================================
+ * Fonts — iOS 26 Design System
+ *
+ * SF Pro is Apple's system typeface and is NOT distributed as a web font under
+ * Apple's license. To get pixel-perfect rendering, install SF Pro locally
+ * (https://developer.apple.com/fonts) — the system-font stack in
+ * colors_and_type.css will pick it up.
+ *
+ * For non-Apple devices we declare Inter (loaded via Google Fonts in
+ * colors_and_type.css) as the fallback. Drop SF-Pro.woff2 files into THIS
+ * folder and add @font-face declarations below to override.
+ * ============================================================================*/
+
+/* Example local-override (uncomment + add files):
+
+@font-face {
+  font-family: "SF Pro";
+  src: url("./SF-Pro.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "SF Pro";
+  src: url("./SF-Pro-Italic.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: italic;
+  font-display: swap;
+}
+
+*/

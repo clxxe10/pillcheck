@@ -1,0 +1,60 @@
+{
+  "medicines": [
+    {
+      "name": "타이레놀정 500mg",
+      "nameEn": "Tylenol 500 mg",
+      "ingredient": "Acetaminophen 500 mg",
+      "dose": "1정",
+      "timesPerDay": 3,
+      "days": 5,
+      "timeSlots": ["morning", "lunch", "evening"],
+      "sourceImageIndex": 0,
+      "confidence": "high"
+    },
+    {
+      "name": "콜드어웨이데이정",
+      "nameEn": "Coldaway Day",
+      "ingredient": "Acetaminophen 325 mg, pseudoephedrine 30 mg",
+      "dose": "2정",
+      "timesPerDay": 2,
+      "days": 3,
+      "timeSlots": ["morning", "evening"],
+      "sourceImageIndex": 1,
+      "confidence": "low"
+    },
+    {
+      "name": "이부프로펜정 400mg",
+      "nameEn": "Ibuprofen 400 mg",
+      "ingredient": "Ibuprofen 400 mg",
+      "dose": "1정",
+      "timesPerDay": 3,
+      "days": 5,
+      "timeSlots": ["morning", "lunch", "evening"],
+      "sourceImageIndex": 1,
+      "confidence": "high"
+    },
+    {
+      "name": "아스피린프로텍트정 100mg",
+      "nameEn": "Aspirin 100 mg",
+      "ingredient": "Aspirin, low dose 100 mg",
+      "dose": "1정",
+      "timesPerDay": 1,
+      "days": 0,
+      "timeSlots": ["morning"],
+      "sourceImageIndex": 2,
+      "confidence": "low"
+    },
+    {
+      "name": "세티리진정 10mg",
+      "nameEn": "Cetirizine 10 mg",
+      "ingredient": "Cetirizine 10 mg",
+      "dose": "1정",
+      "timesPerDay": 1,
+      "days": 5,
+      "timeSlots": ["bedtime"],
+      "sourceImageIndex": 1,
+      "confidence": "high"
+    }
+  ],
+  "unreadable": []
+}
