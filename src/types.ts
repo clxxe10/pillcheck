@@ -71,6 +71,7 @@ export type ExtractResponse = {
 export type ExtractErrorCode =
   | "bad_request"
   | "rate_limited"
+  | "quota"
   | "timeout"
   | "invalid_response"
   | "not_configured"

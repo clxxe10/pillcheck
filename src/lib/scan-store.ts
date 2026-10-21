@@ -10,6 +10,7 @@ import { useSyncExternalStore } from "react";
 
 export type ScanNotice =
   | { kind: "rate_limited" }
+  | { kind: "quota" }
   | { kind: "failed"; code: ExtractErrorCode | "network" };
 
 export type AnalysisOutcome =
@@ -146,6 +147,7 @@ async function analyze(pending: PendingAnalysis): Promise<AnalysisOutcome> {
     await new Promise((resolve) => window.setTimeout(resolve, DEMO_DELAY_MS));
     return { type: "success", source: "demo", photos: sessionPhotos, medicines: demoMedicines(pending.photos) };
   }
+  if (pending.photos.length > 5) return { type: "error", code: "bad_request" };
   try {
     const result = await requestExtraction(
       pending.photos.flatMap((photo) => (photo.file ? [{ file: photo.file, clinic: photo.clinic }] : [])),
@@ -195,7 +197,12 @@ export function finishAnalysis(outcome: AnalysisOutcome): "/results" | "/scan" {
     return "/scan";
   }
   set({
-    notice: outcome.code === "rate_limited" ? { kind: "rate_limited" } : { kind: "failed", code: outcome.code },
+    notice:
+      outcome.code === "rate_limited"
+        ? { kind: "rate_limited" }
+        : outcome.code === "quota"
+          ? { kind: "quota" }
+          : { kind: "failed", code: outcome.code },
   });
   return "/scan";
 }

@@ -151,7 +151,12 @@ export function ScanScreen({ initialError = false }: { initialError?: boolean })
 
             {notice ? (
               <div className="order-2 mb-3 lg:order-1">
-                <NoticeCard notice={notice} onRetry={analyze} disabled={readable === 0} />
+                <NoticeCard
+                  notice={notice}
+                  onRetry={analyze}
+                  onSamples={loadSamplePhotos}
+                  disabled={readable === 0}
+                />
               </div>
             ) : null}
 
@@ -442,17 +447,22 @@ function PhotoGrid({
 function NoticeCard({
   notice,
   onRetry,
+  onSamples,
   disabled,
 }: {
   notice: ScanNotice;
   onRetry: () => void;
+  onSamples: () => void;
   disabled: boolean;
 }) {
   const { t } = useTranslation();
+  const limited = notice.kind === "rate_limited" || notice.kind === "quota";
   const failKey =
     notice.kind === "rate_limited"
       ? "rateBody"
-      : notice.code === "timeout"
+      : notice.kind === "quota"
+        ? "quotaBody"
+        : notice.code === "timeout"
         ? "fail_timeout"
         : notice.code === "invalid_response"
           ? "fail_invalid"
@@ -473,13 +483,22 @@ function NoticeCard({
         }}
       >
         <span style={{ fontWeight: 600, fontSize: 19, lineHeight: 1.25 }}>
-          {t(notice.kind === "rate_limited" ? "scanScreen.rateTitle" : "scanScreen.failTitle")}
+          {t(
+            notice.kind === "rate_limited"
+              ? "scanScreen.rateTitle"
+              : notice.kind === "quota"
+                ? "scanScreen.quotaTitle"
+                : "scanScreen.failTitle",
+          )}
         </span>
         <span style={{ display: "flex", gap: 10, fontWeight: 400, fontSize: 16, lineHeight: 1.45, color: "#4A4A50" }}>
           <span style={{ flex: "none", display: "flex", color: "#6B6B72" }}>
             <InfoIcon />
           </span>
-          {t(`scanScreen.${failKey}`)}
+          <span>
+            {t(`scanScreen.${failKey}`)}
+            {limited ? ` ${t("scanScreen.rateSample")}` : ""}
+          </span>
         </span>
       </div>
       <div style={{ padding: "12px 0 16px", display: "flex", gap: 8, alignItems: "center" }}>
@@ -494,6 +513,24 @@ function NoticeCard({
           </span>
           {t("scanScreen.tryAgain")}
         </button>
+        {limited ? (
+          <button
+            type="button"
+            onClick={onSamples}
+            style={{
+              height: 48,
+              padding: "0 8px",
+              background: "transparent",
+              color: "#111",
+              fontWeight: 500,
+              fontSize: 15,
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+            }}
+          >
+            {t("scanScreen.trySamples")}
+          </button>
+        ) : null}
       </div>
     </div>
   );

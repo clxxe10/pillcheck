@@ -5,6 +5,7 @@ import type { Medicine } from "@/types";
 export const maxDuration = 30;
 
 const noStore = { "Cache-Control": "no-store" };
+const MAX_BODY_CHARS = 80_000;
 
 function numberOr(value: unknown, fallback: number) {
   const number = typeof value === "string" ? Number(value) : value;
@@ -42,9 +43,22 @@ function readMedicines(body: unknown): Medicine[] | string {
 }
 
 export async function POST(request: Request) {
+  const declared = Number(request.headers.get("content-length") || 0);
+  if (declared > MAX_BODY_CHARS) {
+    return Response.json({ error: "bad_request", message: "The medicine list is too large." }, { status: 400, headers: noStore });
+  }
+  let raw: string;
+  try {
+    raw = await request.text();
+  } catch {
+    return Response.json({ error: "bad_request", message: "The request body must be JSON." }, { status: 400, headers: noStore });
+  }
+  if (raw.length > MAX_BODY_CHARS) {
+    return Response.json({ error: "bad_request", message: "The medicine list is too large." }, { status: 400, headers: noStore });
+  }
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(raw);
   } catch {
     return Response.json({ error: "bad_request", message: "The request body must be JSON." }, { status: 400, headers: noStore });
   }

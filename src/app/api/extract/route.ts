@@ -1,14 +1,16 @@
 import { extractMedicines } from "@/lib/ai";
 import { AiError, errorStatus } from "@/lib/ai/errors";
+import { clientIp, takeExtractSlot } from "@/lib/extract-limit";
 import type { ExtractErrorCode, ExtractErrorResponse, ExtractImage } from "@/types";
 
 export const maxDuration = 60;
 
 /** Photos and results are only held in this request. Nothing is written to disk. */
 
-const MAX_IMAGES = 10;
-const MAX_IMAGE_CHARS = 7_000_000;
-const MAX_TOTAL_CHARS = 18_000_000;
+const MAX_IMAGES = 5;
+const MAX_IMAGE_CHARS = 5_000_000;
+const MAX_TOTAL_CHARS = 22_000_000;
+const MAX_BODY_CHARS = 26_000_000;
 const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/heic", "image/heif"];
 const BASE64 = /^[A-Za-z0-9+/]+={0,2}$/;
 
@@ -49,6 +51,9 @@ function readImages(body: unknown): ExtractImage[] | string {
 }
 
 export async function POST(request: Request) {
+  const declared = Number(request.headers.get("content-length") || 0);
+  if (declared > MAX_BODY_CHARS) return fail("bad_request", "The photos are too large. Send fewer or smaller ones.");
+
   let body: unknown;
   try {
     body = await request.json();
@@ -58,6 +63,14 @@ export async function POST(request: Request) {
 
   const images = readImages(body);
   if (typeof images === "string") return fail("bad_request", images);
+
+  const allowance = takeExtractSlot(clientIp(request));
+  if (allowance === "rate_limited") {
+    return fail("rate_limited", "Too many photo readings from this network. Try again later, or use the sample photos.");
+  }
+  if (allowance === "quota") {
+    return fail("quota", "Live photo reading is paused until tomorrow. The sample photos still work.");
+  }
 
   try {
     const result = await extractMedicines(images);

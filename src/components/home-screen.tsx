@@ -17,15 +17,17 @@ import {
   clinicCountLabel,
   displayName,
   formatClock,
-  inHoursLabel,
+  formatToday,
   issueCountLabel,
   medicineCount,
+  nextDose,
+  nextDoseBadge,
   slotTimes,
   warningCopy,
 } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
-import { nextDoseHours } from "@/lib/mock";
 import { useSession } from "@/lib/session";
+import { useNow } from "@/lib/use-now";
 import type { DoseSlot, Medicine, SafetyAlert } from "@/types";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -39,7 +41,8 @@ function uniqueClinics(list: Medicine[]) {
 }
 
 export function HomeScreen({ view }: { view?: "empty" | "filled" }) {
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const now = useNow();
   const session = useSession();
   const medicines = session.medicines;
   const hasResults = view ? view === "filled" : session.hasResults;
@@ -58,7 +61,7 @@ export function HomeScreen({ view }: { view?: "empty" | "filled" }) {
       <div className="flex flex-1 flex-col pt-[22px] lg:pt-0">
         <div className="flex items-start justify-between gap-6">
           <TitleBlock
-            kicker={t("dateHome")}
+            kicker={now ? formatToday(lang, "home", new Date(now)) : "\u00a0"}
             line1={t("home.line1")}
             line2={t("home.line2")}
           />
@@ -152,10 +155,10 @@ function EmptyHome() {
 
 function FilledHome({ medicines, alerts }: { medicines: Medicine[]; alerts: SafetyAlert[] }) {
   const { t, lang } = useTranslation();
-  const evening = medicines.filter((item) => item.timeSlots.includes("evening"));
-  const slot: DoseSlot = evening.length > 0 ? "evening" : firstSlot(medicines);
-  const doseMeds =
-    slot === "evening" ? evening : medicines.filter((item) => item.timeSlots.includes(slot));
+  const now = useNow();
+  const upcoming = now ? nextDose(medicines, new Date(now)) : null;
+  const slot: DoseSlot = upcoming?.slot ?? firstSlot(medicines);
+  const doseMeds = medicines.filter((item) => item.timeSlots.includes(slot));
   const reviewCount = medicines.filter((item) => item.confidence === "low").length;
 
   return (
@@ -177,7 +180,7 @@ function FilledHome({ medicines, alerts }: { medicines: Medicine[]; alerts: Safe
               }}
             >
               <span style={{ fontWeight: 400, fontSize: 15, color: "#6B6B72" }}>{t("home.nextDose")}</span>
-              {slot === "evening" ? <BlackBadge>{inHoursLabel(nextDoseHours, lang)}</BlackBadge> : null}
+              {upcoming ? <BlackBadge>{nextDoseBadge(upcoming.hours, upcoming.minutes, lang)}</BlackBadge> : null}
             </div>
             <Link
               href="/results"

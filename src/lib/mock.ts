@@ -33,6 +33,3 @@ export function sampleResult(): ExtractResponse {
     samplePhotos.map((photo) => photo.clinic),
   );
 }
-
-/** Static “next dose” countdown from the home artboard. */
-export const nextDoseHours = 2;

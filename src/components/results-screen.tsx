@@ -18,6 +18,7 @@ import {
   doseAmount,
   doseLine,
   formatClock,
+  formatToday,
   issueCountLabel,
   resultsMeta,
   reviewCountLabel,
@@ -29,6 +30,7 @@ import {
 } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
+import { useNow } from "@/lib/use-now";
 import type { DoseSlot, Medicine, SafetyAlert } from "@/types";
 import { useState } from "react";
 
@@ -39,26 +41,40 @@ const desktopOrb = { top: -90, right: -70, width: 420, height: 300 };
 
 export function ResultsScreen() {
   const { t, lang } = useTranslation();
+  const now = useNow();
   const { medicines, alerts, photoCount, updateMedicine, deleteMedicine } = useSession();
   const [slot, setSlot] = useState<DoseSlot | "all">("all");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const editing = medicines.find((item) => item.id === editingId) ?? null;
   const reviewCount = medicines.filter((item) => item.confidence === "low").length;
   const clinics = new Set(medicines.map((item) => item.clinic)).size;
 
   async function share() {
-    const text = alerts
+    const list = medicines
+      .map((medicine) => `${displayName(medicine, lang)} — ${medicine.ingredient} — ${doseLine(medicine, lang)} — ${medicine.clinic}`)
+      .join("\n");
+    const warnings = alerts
       .map((alert) => {
         const copy = warningCopy(alert, medicines, lang, t);
         return `${copy.label}: ${copy.title}\n${copy.body}`;
       })
       .join("\n\n");
+    const text = [list, warnings, t("disclaimer")].filter(Boolean).join("\n\n");
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({ title: "PillCheck", text });
-      } catch {
-        /* dismissed */
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
       }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2200);
+    } catch {
+      setCopied(false);
     }
   }
 
@@ -86,7 +102,7 @@ export function ResultsScreen() {
                 </h1>
               </span>
               <span style={{ fontWeight: 400, fontSize: 17, color: "#6B6B72" }}>
-                {resultsMeta(photoCount, t("dateShort"), lang)}
+                {resultsMeta(photoCount, now ? formatToday(lang, "short", new Date(now)) : "", lang)}
               </span>
             </div>
             <LangToggle wide solid />
@@ -95,7 +111,28 @@ export function ResultsScreen() {
       }
       mobileBar={<MobileDock active="list" />}
       overlay={
-        editing ? (
+        <>
+        {copied ? (
+          <div
+            role="status"
+            className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 lg:bottom-8"
+            style={{
+              height: 44,
+              padding: "0 18px",
+              borderRadius: 9999,
+              background: "#111",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 15,
+              display: "flex",
+              alignItems: "center",
+              boxShadow: "0 8px 24px rgba(0,0,0,.18)",
+            }}
+          >
+            {t("results.copied")}
+          </div>
+        ) : null}
+        {editing ? (
           <EditSheet
             key={editing.id}
             medicine={editing}
@@ -103,7 +140,8 @@ export function ResultsScreen() {
             onSave={updateMedicine}
             onDelete={deleteMedicine}
           />
-        ) : null
+        ) : null}
+        </>
       }
     >
       <div className="flex flex-1 flex-col pt-4 lg:pt-6">

@@ -48,6 +48,7 @@ export function EditSheet({
   const [times, setTimes] = useState(medicine.timesPerDay);
   const [days, setDays] = useState<number | null>(medicine.days);
   const [slots, setSlots] = useState<DoseSlot[]>(medicine.timeSlots);
+  const [photoOpen, setPhotoOpen] = useState(false);
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -75,6 +76,39 @@ export function EditSheet({
 
   return (
     <div className="fixed inset-0 z-40">
+      {photoOpen && preview ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black lg:bg-[rgba(17,17,17,.72)] lg:p-10"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t("edit.view")}
+        >
+          <button
+            type="button"
+            aria-label={t("close")}
+            onClick={() => setPhotoOpen(false)}
+            className="absolute top-4 right-4 z-10 lg:top-6 lg:right-6"
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 9999,
+              background: "rgba(255,255,255,.92)",
+              color: "#111",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <CloseIcon size={18} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element -- local preview, not a remote asset */}
+          <img
+            src={preview}
+            alt=""
+            className="h-full w-full object-contain lg:h-auto lg:max-h-[80vh] lg:w-auto lg:max-w-[860px] lg:rounded-2xl"
+          />
+        </div>
+      ) : null}
       <button
         type="button"
         aria-label={t("close")}
@@ -149,7 +183,7 @@ export function EditSheet({
             <button
               type="button"
               onClick={() => {
-                if (preview) window.open(preview, "_blank", "noopener");
+                if (preview) setPhotoOpen(true);
               }}
               style={{
                 fontWeight: 500,

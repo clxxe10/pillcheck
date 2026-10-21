@@ -139,9 +139,40 @@ export function foundLabel(count: number, lang: Lang) {
   return `${count} ${noun} found so far`;
 }
 
-export function inHoursLabel(hours: number, lang: Lang) {
-  if (lang === "ko") return `${hours}시간 후`;
-  return `In ${hours} hr`;
+const WEEKDAYS_KO = ["일", "월", "화", "수", "목", "금", "토"];
+
+/** Home kicker and the shorter results line. Computed from the viewer's local date. */
+export function formatToday(lang: Lang, variant: "home" | "short", now = new Date()) {
+  if (lang === "ko") {
+    return `${now.getMonth() + 1}월 ${now.getDate()}일 ${WEEKDAYS_KO[now.getDay()]}요일`;
+  }
+  const weekday = now.toLocaleDateString("en-GB", { weekday: "long" });
+  const month = now.toLocaleDateString("en-GB", { month: variant === "home" ? "long" : "short" });
+  return `${weekday}, ${now.getDate()} ${month}`;
+}
+
+/** Next scheduled slot at the default clock times, or the first one tomorrow. */
+export function nextDose(medicines: Medicine[], now = new Date()) {
+  const slots = slotOrder.filter((slot) => medicines.some((item) => item.timeSlots.includes(slot)));
+  if (slots.length === 0) return null;
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  const at = (slot: DoseSlot) => {
+    const [hour, minute] = slotTimes[slot].split(":").map(Number);
+    return hour * 60 + minute;
+  };
+  const later = slots.find((slot) => at(slot) > minutesNow);
+  const slot = later ?? slots[0];
+  const delta = later ? at(slot) - minutesNow : 24 * 60 - minutesNow + at(slot);
+  return { slot, hours: Math.floor(delta / 60), minutes: delta % 60 };
+}
+
+export function nextDoseBadge(hours: number, minutes: number, lang: Lang) {
+  if (hours <= 0) {
+    const mins = Math.max(minutes, 1);
+    return lang === "ko" ? `${mins}분 후` : `In ${mins} min`;
+  }
+  const rounded = minutes >= 30 ? hours + 1 : hours;
+  return lang === "ko" ? `${rounded}시간 후` : `In ${rounded} hr`;
 }
 
 export function photoPlaceLabel(index: number, clinic: string, lang: Lang) {

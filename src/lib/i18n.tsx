@@ -15,8 +15,6 @@ const STORAGE_KEY = "app_language";
 
 const en = {
   disclaimer: "This tool does not replace advice from a doctor or pharmacist.",
-  dateHome: "Tuesday, 21 October",
-  dateShort: "Tuesday, 21 Oct",
   scan: "Scan",
   back: "Back",
   close: "Close",
@@ -68,6 +66,9 @@ const en = {
     addClinic: "Add clinic name",
     rateTitle: "Too many requests right now",
     rateBody: "Please try again in a moment.",
+    rateSample: "Or try the sample photos.",
+    quotaTitle: "Today's reading limit is used up",
+    quotaBody: "Live photo reading is paused until tomorrow. The sample photos still work.",
     failTitle: "Couldn’t check your photos",
     fail_timeout: "It took too long. Check your connection and try again.",
     fail_invalid: "We couldn’t understand the result. Please try again.",
@@ -90,6 +91,7 @@ const en = {
     title: "Results",
     checkNow: "Check now",
     share: "Share with my pharmacist",
+    copied: "Copied",
     medicines: "Medicines",
     review: "Review",
     needsReview: "Needs review",
@@ -147,8 +149,6 @@ const en = {
 
 const ko: typeof en = {
   disclaimer: "이 도구는 의사·약사 상담을 대신하지 않습니다.",
-  dateHome: "10월 21일 화요일",
-  dateShort: "10월 21일 화요일",
   scan: "스캔",
   back: "뒤로",
   close: "닫기",
@@ -200,6 +200,9 @@ const ko: typeof en = {
     addClinic: "병원 이름 추가",
     rateTitle: "지금 요청이 많아요",
     rateBody: "잠시 후 다시 시도해 주세요.",
+    rateSample: "또는 샘플 사진으로 해 보세요.",
+    quotaTitle: "오늘 읽을 수 있는 횟수를 다 썼어요",
+    quotaBody: "내일까지 사진 판독이 멈춰 있어요. 샘플 사진은 그대로 쓸 수 있어요.",
     failTitle: "사진을 확인하지 못했어요",
     fail_timeout: "시간이 너무 오래 걸렸어요. 연결을 확인하고 다시 시도해 주세요.",
     fail_invalid: "결과를 이해하지 못했어요. 다시 시도해 주세요.",
@@ -222,6 +225,7 @@ const ko: typeof en = {
     title: "결과",
     checkNow: "지금 확인",
     share: "약사에게 공유",
+    copied: "복사됨",
     medicines: "약",
     review: "확인",
     needsReview: "확인 필요",
