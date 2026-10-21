@@ -4,9 +4,27 @@ import type { ExtractResponse, SafetyAlert, ScanPhoto } from "@/types";
 
 /** Sample bags shown on the scan screen. Analyzing only these uses the saved result, not the API. */
 export const samplePhotos: ScanPhoto[] = [
-  { id: "img-0412", filename: "IMG_0412", clinic: "Seoul Family Clinic", sample: true },
-  { id: "img-0413", filename: "IMG_0413", clinic: "Hanbit ENT", sample: true },
-  { id: "img-0415", filename: "IMG_0415", clinic: "Green Heart Clinic", sample: true },
+  {
+    id: "img-0412",
+    filename: "seoul-family.png",
+    clinic: "서울가정의원",
+    sample: true,
+    previewUrl: "/samples/seoul-family.png",
+  },
+  {
+    id: "img-0413",
+    filename: "hanbit-ent.png",
+    clinic: "한빛이비인후과",
+    sample: true,
+    previewUrl: "/samples/hanbit-ent.png",
+  },
+  {
+    id: "img-0415",
+    filename: "green-heart.png",
+    clinic: "그린하트내과",
+    sample: true,
+    previewUrl: "/samples/green-heart.png",
+  },
 ];
 
 export function sampleResult(): ExtractResponse {
@@ -31,7 +49,7 @@ export const sampleAlerts: SafetyAlert[] = [
     id: "duplicate",
     severity: "warning",
     label: "Duplicate ingredient",
-    homeTitle: "Tylenol and Coldaway Day both contain acetaminophen",
+    homeTitle: "Tylenol and Coldaewon Day both contain acetaminophen",
     title: "Both contain acetaminophen",
     body: "Together that is up to 2,800 mg a day, close to the daily limit for many adults.",
     medicineIds: ["med-1", "med-2"],

@@ -53,9 +53,9 @@ function set(next: Partial<ScanState>) {
 }
 
 function revoke(photo: ScanPhoto) {
-  if (photo.previewUrl && !state.analyzed.some((item) => item.previewUrl === photo.previewUrl)) {
-    URL.revokeObjectURL(photo.previewUrl);
-  }
+  if (!photo.previewUrl?.startsWith("blob:")) return;
+  if (state.analyzed.some((item) => item.previewUrl === photo.previewUrl)) return;
+  URL.revokeObjectURL(photo.previewUrl);
 }
 
 let uploadCount = 0;
@@ -71,6 +71,12 @@ function photoFromFile(file: File): ScanPhoto {
     file,
     previewUrl: URL.createObjectURL(file),
   };
+}
+
+/** Loads the saved sample bags. Analyzing them uses the stored result and does not call the API. */
+export function loadSamplePhotos() {
+  state.photos.forEach(revoke);
+  set({ photos: samplePhotos.map((photo) => ({ ...photo })), notice: null });
 }
 
 export function addFiles(files: File[]) {
@@ -174,7 +180,7 @@ export function finishAnalysis(outcome: AnalysisOutcome): "/results" | "/scan" {
     const analyzed = state.pending?.photos ?? samplePhotos;
     state.analyzed.forEach((photo) => {
       const stillUsed = [...state.photos, ...analyzed].some((item) => item.previewUrl === photo.previewUrl);
-      if (photo.previewUrl && !stillUsed) URL.revokeObjectURL(photo.previewUrl);
+      if (photo.previewUrl?.startsWith("blob:") && !stillUsed) URL.revokeObjectURL(photo.previewUrl);
     });
     set({ analyzed });
     return "/results";

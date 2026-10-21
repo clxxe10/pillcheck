@@ -12,8 +12,8 @@
       "confidence": "high"
     },
     {
-      "name": "콜드어웨이데이정",
-      "nameEn": "Coldaway Day",
+      "name": "콜대원데이정",
+      "nameEn": "Coldaewon Day",
       "ingredient": "Acetaminophen 325 mg, pseudoephedrine 30 mg",
       "dose": "2정",
       "timesPerDay": 2,
@@ -34,7 +34,7 @@
       "confidence": "high"
     },
     {
-      "name": "아스피린프로텍트정 100mg",
+      "name": "아스피린장용정 100mg",
       "nameEn": "Aspirin 100 mg",
       "ingredient": "Aspirin, low dose 100 mg",
       "dose": "1정",

@@ -52,6 +52,7 @@ const en = {
     drop: "Drop photos here",
     dropHint: "JPG, PNG or HEIC · one bag or label per photo",
     chooseFiles: "Choose files",
+    trySamples: "Try with sample photos",
     tapEdit: "Tap a name to edit",
     clickEdit: "Click a name to edit",
     clear: "Make sure the label text is clear and not blurry",
@@ -125,7 +126,7 @@ const en = {
     },
     duplicate: {
       label: "Duplicate ingredient",
-      homeTitle: "Tylenol and Coldaway Day both contain acetaminophen",
+      homeTitle: "Tylenol and Coldaewon Day both contain acetaminophen",
       title: "Both contain acetaminophen",
       body: "Together that is up to 2,800 mg a day, close to the daily limit for many adults.",
     },
@@ -171,6 +172,7 @@ const ko: typeof en = {
     drop: "여기에 사진을 놓으세요",
     dropHint: "JPG, PNG 또는 HEIC · 사진 한 장에 봉투 또는 라벨 하나",
     chooseFiles: "파일 선택",
+    trySamples: "샘플 사진으로 해보기",
     tapEdit: "이름을 눌러 수정",
     clickEdit: "이름을 눌러 수정",
     clear: "라벨 글자가 선명하고 흐리지 않은지 확인해 주세요",
@@ -244,7 +246,7 @@ const ko: typeof en = {
     },
     duplicate: {
       label: "성분 중복",
-      homeTitle: "타이레놀과 Coldaway Day에 아세트아미노펜이 함께 들어 있습니다",
+      homeTitle: "타이레놀과 콜대원데이에 아세트아미노펜이 함께 들어 있습니다",
       title: "둘 다 아세트아미노펜이 들어 있습니다",
       body: "합치면 하루에 최대 2,800 mg으로, 많은 성인의 하루 허용량에 가깝습니다.",
     },

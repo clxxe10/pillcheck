@@ -23,6 +23,7 @@ import { analyzeLabel, photoCountLabel, photoPlaceLabel } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
 import {
   addFiles,
+  loadSamplePhotos,
   removePhoto,
   replacePhoto,
   setClinic,
@@ -134,7 +135,11 @@ export function ScanScreen({ initialError = false }: { initialError?: boolean })
         </div>
 
         <div className="mt-6 lg:mt-7 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
-          <Dropzone onBrowse={() => libraryRef.current?.click()} onFiles={addList} />
+          <Dropzone
+            onBrowse={() => libraryRef.current?.click()}
+            onFiles={addList}
+            onSamples={loadSamplePhotos}
+          />
 
           <div className="flex flex-col">
             <div className="order-1 mx-0.5 mt-[30px] mb-3 flex items-center justify-between lg:hidden">
@@ -201,9 +206,11 @@ export function ScanScreen({ initialError = false }: { initialError?: boolean })
 function Dropzone({
   onBrowse,
   onFiles,
+  onSamples,
 }: {
   onBrowse: () => void;
   onFiles: (files: FileList | null) => void;
+  onSamples: () => void;
 }) {
   const { t } = useTranslation();
   return (
@@ -269,6 +276,21 @@ function Dropzone({
         <ImageIcon />
         <span className="lg:hidden">{t("scanScreen.choosePhotos")}</span>
         <span className="hidden lg:inline">{t("scanScreen.chooseFiles")}</span>
+      </button>
+      <button
+        type="button"
+        onClick={onSamples}
+        className="text-[15px] lg:text-[16px]"
+        style={{
+          border: 0,
+          background: "transparent",
+          fontWeight: 500,
+          color: "#111",
+          textDecoration: "underline",
+          textUnderlineOffset: 3,
+        }}
+      >
+        {t("scanScreen.trySamples")}
       </button>
     </div>
   );
