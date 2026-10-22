@@ -158,7 +158,7 @@ function Chip({ children, tone }: { children: ReactNode; tone: "amber" | "red" }
       ? { background: "rgba(255,59,48,0.12)", color: "#D70015" }
       : { background: "rgba(255,149,0,0.16)", color: "#A05A00" };
   return (
-    <span className="rounded-full px-3 py-1.5 text-[13px] font-semibold" style={style}>
+    <span className="inline-flex w-fit max-w-full self-start rounded-full px-3 py-1.5 text-[13px] leading-none font-semibold whitespace-nowrap" style={style}>
       {children}
     </span>
   );
@@ -229,7 +229,7 @@ export function LandingScreen() {
           <Join mark="=" lime />
           <div className="flex flex-1 flex-col gap-4 rounded-[28px] bg-white p-6 shadow-[0_0_0_1.5px_#FF9500]">
             <div className="flex h-40 flex-col items-center justify-center rounded-[20px] bg-[rgba(255,149,0,0.10)]">
-              <div className="text-[52px] font-bold tracking-[-0.03em] text-[#A05A00]">{t("landing.perDay")}</div>
+              <div className="text-center text-[36px] leading-none font-bold tracking-[-0.03em] whitespace-nowrap text-[#A05A00] xl:text-[52px]">{t("landing.perDay")}</div>
               <div className="text-[15px] font-semibold text-[#A05A00]">{t("landing.aDay")}</div>
             </div>
             <div>
@@ -319,16 +319,16 @@ export function LandingScreen() {
           <Reveal className="col-span-2 flex flex-col gap-3.5 rounded-3xl bg-white p-[22px] lg:col-span-7 lg:gap-6 lg:rounded-[28px] lg:p-8">
             <BlockTitle title={t("landing.dupTitle")} body={t("landing.dupBody")} />
             <div className="hidden flex-col gap-2.5 rounded-[20px] bg-[#F5F5F7] p-[18px] text-[15px] font-semibold lg:flex">
-              <div className="flex justify-between">{t("landing.tylenol")}<span className="font-medium text-[#A05A00]">{t("landing.acetaminophen")}</span></div>
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">{t("landing.tylenol")}<span className="font-medium whitespace-nowrap text-[#A05A00]">{t("landing.acetaminophen")}</span></div>
               <div className="h-px bg-[rgba(60,60,67,0.2)]" />
-              <div className="flex justify-between">{t("landing.coldShort")}<span className="font-medium text-[#A05A00]">{t("landing.acetaminophen")}</span></div>
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">{t("landing.coldShort")}<span className="font-medium whitespace-nowrap text-[#A05A00]">{t("landing.acetaminophen")}</span></div>
             </div>
             <Chip tone="amber">{t("alerts.duplicate.label")}</Chip>
           </Reveal>
           <Reveal delay={60} className="flex flex-col gap-3 rounded-3xl bg-white p-5 lg:col-span-5 lg:gap-6 lg:rounded-[28px] lg:p-8">
             <BlockTitle title={t("landing.doseTitle")} body={t("landing.doseBody")} small />
             <div className="mt-auto hidden flex-col gap-2.5 lg:flex">
-              <div className="flex justify-between text-[15px] font-semibold">{t("landing.acetaminophen")}<span>2,800 mg / day</span></div>
+              <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[15px] font-semibold"><span className="whitespace-nowrap">{t("landing.acetaminophen")}</span><span className="whitespace-nowrap">2,800 mg / day</span></div>
               <div className="h-2.5 overflow-hidden rounded-[5px] bg-[#F2F2F7]"><div className="h-full w-[70%] rounded-[5px] bg-[#FF9500]" /></div>
             </div>
             <div className="mt-auto h-2 overflow-hidden rounded bg-[#F2F2F7] lg:hidden"><div className="h-full w-[70%] bg-[#FF9500]" /></div>
@@ -477,9 +477,9 @@ function ProblemCard({
         <div className="text-[22px] font-bold tracking-[-0.01em]">{title}</div>
         <div className="text-[15px] text-[rgba(60,60,67,0.7)]">{detail}</div>
       </div>
-      <div className="mt-auto flex items-center justify-between">
-        <span className="rounded-full bg-[#F2F2F7] px-3 py-1.5 text-[13px] font-semibold">{chip}</span>
-        <span className="text-[15px] font-semibold">{amount}</span>
+      <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <span className="shrink-0 rounded-full bg-[#F2F2F7] px-3 py-1.5 text-[13px] leading-none font-semibold whitespace-nowrap">{chip}</span>
+        <span className="shrink-0 text-[15px] font-semibold whitespace-nowrap">{amount}</span>
       </div>
     </div>
   );
@@ -508,10 +508,10 @@ function MiniMed({ illo, kicker, title, detail, width, height }: { illo: string;
       <div className="flex h-24 w-[84px] shrink-0 items-center justify-center rounded-2xl bg-[#F5F5F7]">
         <img src={`/brand/${illo}`} alt="" style={{ width, height }} />
       </div>
-      <div>
+      <div className="min-w-0">
         <div className="text-[12px] font-semibold text-[rgba(60,60,67,0.6)]">{kicker}</div>
         <div className="text-[18px] font-bold">{title}</div>
-        <div className="text-[14px] text-[rgba(60,60,67,0.7)]">{detail}</div>
+        <div className="text-[14px] break-keep text-[rgba(60,60,67,0.7)]">{detail}</div>
       </div>
     </div>
   );
@@ -540,12 +540,12 @@ function StepCopy({ n, title, body }: { n: string; title: string; body: string }
 
 function CheckRow({ illo, width, name, chip, amber = false }: { illo: string; width: number; name: string; chip: string; amber?: boolean }) {
   return (
-    <div className="flex items-center justify-between rounded-[14px] bg-white px-3 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-      <div className="flex items-center gap-2.5">
-        <img src={`/brand/${illo}`} alt="" style={{ width }} />
-        <div className="text-[14px] font-semibold">{name}</div>
+    <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 rounded-[14px] bg-white px-3 py-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+      <div className="flex shrink-0 items-center gap-2.5">
+        <img src={`/brand/${illo}`} alt="" className="shrink-0" style={{ width }} />
+        <div className="text-[14px] font-semibold whitespace-nowrap">{name}</div>
       </div>
-      <div className="rounded-full px-2 py-[3px] text-[11px] font-semibold" style={amber ? { background: "rgba(255,149,0,0.16)", color: "#A05A00" } : { background: "#F2F2F7" }}>{chip}</div>
+      <div className="shrink-0 rounded-full px-2 py-[3px] text-[11px] leading-none font-semibold whitespace-nowrap" style={amber ? { background: "rgba(255,149,0,0.16)", color: "#A05A00" } : { background: "#F2F2F7" }}>{chip}</div>
     </div>
   );
 }
