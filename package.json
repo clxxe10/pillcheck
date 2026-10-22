@@ -7,12 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/safety/safety.test.ts src/lib/ai/normalize.test.ts"
+    "test": "tsx --test src/lib/safety/safety.test.ts src/lib/ai/normalize.test.ts src/lib/results-pdf.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.137.0",
     "@google/genai": "^2.30.0",
     "clsx": "^2.1.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.61.0",
     "next": "16.4.2",
     "react": "19.3.0",

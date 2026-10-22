@@ -9,6 +9,9 @@ import {
   doseAmount,
   doseLine,
   formatClock,
+  formatDays,
+  formatDose,
+  formatTimes,
   formatToday,
   issueCountLabel,
   medicineSlots,
@@ -21,7 +24,18 @@ import {
   summaryLabel,
   warningCopy,
 } from "@/lib/format";
-import { useTranslation } from "@/lib/i18n";
+import { useTranslation, type Lang } from "@/lib/i18n";
+import {
+  buildShareText,
+  createResultsPdf,
+  downloadPdf,
+  loadPdfFont,
+  pdfFile,
+  pdfFilename,
+  type PdfMedicine,
+  type PdfSlot,
+  type PdfWarning,
+} from "@/lib/results-pdf";
 import { resetScan } from "@/lib/scan-store";
 import { useSession } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
@@ -42,7 +56,9 @@ export function ResultsScreen() {
   const [ready, setReady] = useState(false);
   const [slot, setSlot] = useState<DoseSlot | "all">("all");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [manualCopy, setManualCopy] = useState<string | null>(null);
   useEffect(() => {
     setReady(true);
   }, []);
@@ -53,34 +69,71 @@ export function ResultsScreen() {
   const reviewCount = medicines.filter((item) => item.confidence === "low").length;
   const clinics = new Set(medicines.map((item) => item.clinic)).size;
 
+  function showToast(message: string) {
+    setToast(message);
+    window.setTimeout(() => setToast((current) => (current === message ? null : current)), 3200);
+  }
+
+  function shareText() {
+    const lines = medicines.map((medicine) => {
+      const kind = sourceKindLabel(medicine.sourceType, lang);
+      return `${displayName(medicine, lang)} — ${medicine.ingredient} — ${doseLine(medicine, lang)} — ${medicine.clinic}${kind ? ` — ${kind}` : ""}`;
+    });
+    const warnings = alerts.map((alert) => {
+      const copy = warningCopy(alert, medicines, lang, t);
+      const source = t("alerts.source").replace("{name}", alert.sourceName);
+      return `${copy.label}: ${copy.title}\n${copy.body}\n${source}`;
+    });
+    return buildShareText({ medicines: lines, warnings, disclaimer: t("disclaimer") });
+  }
+
+  async function pdfBytes() {
+    const font = await loadPdfFont();
+    const date = now ? new Date(now) : new Date();
+    return createResultsPdf(font, {
+      dateLabel: formatToday(lang, "short", date),
+      warningsTitle: t("results.pdfWarnings"),
+      medicinesTitle: t("results.medicines"),
+      scheduleTitle: t("results.schedule"),
+      none: t("results.pdfNone"),
+      disclaimer: t("disclaimer"),
+      warnings: alerts.map((alert) => pdfWarning(alert, medicines, lang, t)),
+      medicines: medicines.map((medicine) => pdfMedicine(medicine, lang, t)),
+      slots: pdfSlots(medicines, lang, t),
+    });
+  }
+
+  async function savePdf() {
+    if (saving) return;
+    setSaving(true);
+    try {
+      const date = now ? new Date(now) : new Date();
+      downloadPdf(await pdfBytes(), pdfFilename(date));
+    } catch {
+      showToast(t("results.pdfFailed"));
+      window.print();
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function share() {
-    const list = medicines
-      .map((medicine) => {
-        const kind = sourceKindLabel(medicine.sourceType, lang);
-        return `${displayName(medicine, lang)} — ${medicine.ingredient} — ${doseLine(medicine, lang)} — ${medicine.clinic}${kind ? ` — ${kind}` : ""}`;
-      })
-      .join("\n");
-    const warnings = alerts
-      .map((alert) => {
-        const copy = warningCopy(alert, medicines, lang, t);
-        return `${copy.label}: ${copy.title}\n${copy.body}`;
-      })
-      .join("\n\n");
-    const text = [list, warnings, t("disclaimer")].filter(Boolean).join("\n\n");
-    if (typeof navigator !== "undefined" && navigator.share) {
+    const text = shareText();
+    if (typeof navigator.share === "function") {
       try {
-        await navigator.share({ title: "PillCheck", text });
+        const filename = pdfFilename(now ? new Date(now) : new Date());
+        const files = await shareFiles(filename, pdfBytes);
+        await navigator.share(files ? { title: "PillCheck", text, files } : { title: "PillCheck", text });
         return;
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        if (isAbort(error)) return;
       }
     }
     try {
       await navigator.clipboard.writeText(text);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2200);
+      showToast(t("results.copied"));
     } catch {
-      setCopied(false);
+      setManualCopy(text);
     }
   }
 
@@ -96,26 +149,29 @@ export function ResultsScreen() {
     <PageFrame
       overlay={
         <>
-        {copied ? (
+        {toast ? (
           <div
             role="status"
-            className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 lg:bottom-8"
+            className="fixed bottom-6 left-1/2 z-50 max-w-[min(92vw,440px)] -translate-x-1/2 px-4 text-center"
             style={{
-              height: 44,
-              padding: "0 18px",
+              minHeight: 44,
+              paddingTop: 12,
+              paddingBottom: 12,
               borderRadius: 9999,
               background: "#111",
               color: "#fff",
               fontWeight: 600,
               fontSize: 15,
+              lineHeight: 1.35,
               display: "flex",
               alignItems: "center",
               boxShadow: "0 8px 24px rgba(0,0,0,.18)",
             }}
           >
-            {t("results.copied")}
+            {toast}
           </div>
         ) : null}
+        {manualCopy ? <CopyDialog text={manualCopy} onClose={() => setManualCopy(null)} /> : null}
         {editing ? (
           <EditSheet
             key={editing.id}
@@ -128,41 +184,19 @@ export function ResultsScreen() {
         </>
       }
     >
-      <div className="flex flex-1 flex-col gap-5 pb-28 lg:gap-7 lg:pb-0">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="flex flex-col gap-1.5">
-            <h1 className="text-[32px] font-bold tracking-[-0.03em] lg:text-[40px]">{t("results.title")}</h1>
-            <div className="flex items-center gap-1.5 text-[13px] text-[rgba(60,60,67,0.7)] lg:text-[14px]">
-              <img src="/brand/clock-gray.svg" alt="" width={15} height={15} />
-              {t("results.ephemeral")}
-            </div>
-            <div className="text-[15px] text-[#6B6B72]">
-              {resultsMeta(photoCount, now ? formatToday(lang, "short", new Date(now)) : "", lang)}
-            </div>
+      <div className="flex flex-1 flex-col gap-5 lg:gap-7">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-[32px] font-bold tracking-[-0.03em] lg:text-[40px]">{t("results.title")}</h1>
+          <div className="flex items-center gap-1.5 text-[13px] text-[rgba(60,60,67,0.7)] lg:text-[14px]">
+            <img src="/brand/clock-gray.svg" alt="" width={15} height={15} />
+            {t("results.ephemeral")}
           </div>
-          <div className="no-print hidden items-center gap-2 lg:flex">
-            <ActionButton icon="download-white" label={t("results.savePdf")} primary onClick={() => window.print()} />
-            <ActionButton icon="printer" label={t("results.print")} onClick={() => window.print()} />
-            <ActionButton icon="share" label={t("results.share")} onClick={share} />
-            <ActionButton icon="restart-gray" label={t("results.startOver")} quiet onClick={startOver} />
+          <div className="text-[15px] text-[#6B6B72]">
+            {resultsMeta(photoCount, now ? formatToday(lang, "short", new Date(now)) : "", lang)}
           </div>
-        </div>
-        <div
-          className="no-print fixed inset-x-3 bottom-4 z-30 grid grid-cols-4 gap-1 rounded-[28px] p-2 lg:hidden"
-          style={{
-            background: "rgba(255,255,255,0.72)",
-            backdropFilter: "blur(24px) saturate(180%)",
-            WebkitBackdropFilter: "blur(24px) saturate(180%)",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12), inset 0 0.5px 0 rgba(255,255,255,0.6)",
-          }}
-        >
-          <DockButton icon="download-white" label={t("results.savePdfShort")} primary onClick={() => window.print()} />
-          <DockButton icon="printer" label={t("results.print")} onClick={() => window.print()} />
-          <DockButton icon="share" label={t("results.shareShort")} onClick={share} />
-          <DockButton icon="restart-gray" label={t("results.startOver")} onClick={startOver} />
         </div>
         <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start lg:gap-x-4">
-          <div id="alerts" className="lg:col-start-1 lg:row-start-1">
+          <div id="alerts" className="flex flex-col gap-3 lg:col-start-1 lg:row-start-1">
             <AlertSummary
               meds={medicines.length}
               clinics={clinics}
@@ -170,6 +204,7 @@ export function ResultsScreen() {
               alerts={alerts}
               onShare={share}
             />
+            <ResultsActions saving={saving} onSavePdf={savePdf} onPrint={() => window.print()} onShare={share} onStartOver={startOver} />
           </div>
 
           <div id="schedule" className="order-3 mt-[30px] lg:order-none lg:col-start-2 lg:row-start-1 lg:mt-0">
@@ -192,7 +227,8 @@ export function ResultsScreen() {
             </div>
           </div>
         </div>
-        <Disclaimer className="lg:mx-0 lg:mt-7" />
+        <ResultsActions saving={saving} onSavePdf={savePdf} onPrint={() => window.print()} onShare={share} onStartOver={startOver} />
+        <Disclaimer className="lg:mx-0 lg:mt-2" />
       </div>
     </PageFrame>
   );
@@ -400,60 +436,148 @@ const editButton = {
   justifyContent: "center" as const,
 };
 
+function ResultsActions({
+  saving,
+  onSavePdf,
+  onPrint,
+  onShare,
+  onStartOver,
+}: {
+  saving: boolean;
+  onSavePdf: () => void;
+  onPrint: () => void;
+  onShare: () => void;
+  onStartOver: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="no-print grid grid-cols-2 gap-2 lg:flex lg:flex-wrap">
+      <ActionButton icon="download-white" label={saving ? t("results.saving") : t("results.savePdf")} primary busy={saving} onClick={onSavePdf} />
+      <ActionButton icon="printer" label={t("results.print")} onClick={onPrint} />
+      <ActionButton icon="share" label={t("results.share")} onClick={onShare} />
+      <ActionButton icon="restart-gray" label={t("results.startOver")} quiet onClick={onStartOver} />
+    </div>
+  );
+}
+
 function ActionButton({
   icon,
   label,
   onClick,
   primary = false,
   quiet = false,
+  busy = false,
 }: {
   icon: string;
   label: string;
   onClick: () => void;
   primary?: boolean;
   quiet?: boolean;
+  busy?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-2 rounded-full px-[18px] py-[11px] text-[15px] font-semibold whitespace-nowrap"
+      disabled={busy}
+      aria-busy={busy || undefined}
+      className="flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-3 py-2.5 text-center text-[14px] leading-snug font-semibold lg:w-auto lg:px-4 lg:text-[15px]"
       style={
         primary
-          ? { background: "#000", color: "#fff", border: "1.5px solid #D4FF4F" }
+          ? { background: "#000", color: "#fff", border: "1.5px solid #D4FF4F", opacity: busy ? 0.7 : 1 }
           : quiet
-            ? { background: "transparent", color: "rgba(60,60,67,0.75)" }
+            ? { background: "#fff", color: "rgba(60,60,67,0.8)", boxShadow: "inset 0 0 0 0.5px rgba(60,60,67,0.18)" }
             : { background: "#fff", color: "#000", boxShadow: "inset 0 0 0 0.5px rgba(60,60,67,0.25)" }
       }
     >
-      <img src={`/brand/${icon}.svg`} alt="" width={17} height={17} />
-      {label}
+      {busy ? (
+        <span className="size-4 shrink-0 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      ) : (
+        <img src={`/brand/${icon}.svg`} alt="" width={17} height={17} className="shrink-0" />
+      )}
+      <span>{label}</span>
     </button>
   );
 }
 
-function DockButton({
-  icon,
-  label,
-  onClick,
-  primary = false,
-}: {
-  icon: string;
-  label: string;
-  onClick: () => void;
-  primary?: boolean;
-}) {
+function CopyDialog({ text, onClose }: { text: string; onClose: () => void }) {
+  const { t } = useTranslation();
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex flex-col items-center gap-1 rounded-[20px] px-0.5 py-2 text-[11px] font-semibold"
-      style={primary ? { background: "#000", color: "#fff", border: "1.5px solid #D4FF4F" } : { color: "#000" }}
-    >
-      <img src={`/brand/${icon}.svg`} alt="" width={20} height={20} />
-      {label}
-    </button>
+    <div className="no-print fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="copy-dialog-title"
+        className="w-full max-w-lg rounded-3xl bg-white p-5"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="copy-dialog-title" className="text-[20px] font-semibold">{t("results.copyTitle")}</h2>
+        <p className="mt-1 text-[14px] text-[#6B6B72]">{t("results.copyHelp")}</p>
+        <textarea
+          readOnly
+          value={text}
+          className="mt-3 h-48 w-full resize-none rounded-2xl bg-[#F5F5F7] p-3 text-[14px] leading-snug"
+          onFocus={(event) => event.currentTarget.select()}
+        />
+        <button type="button" onClick={onClose} className="mt-3 h-11 rounded-full bg-black px-5 text-[15px] font-semibold text-white">
+          {t("results.copyClose")}
+        </button>
+      </div>
+    </div>
   );
+}
+
+function isAbort(error: unknown) {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
+async function shareFiles(filename: string, makePdf: () => Promise<Uint8Array>) {
+  if (typeof navigator.canShare !== "function") return undefined;
+  try {
+    const file = pdfFile(await makePdf(), filename);
+    return navigator.canShare({ files: [file] }) ? [file] : undefined;
+  } catch (error) {
+    if (isAbort(error)) throw error;
+    return undefined;
+  }
+}
+
+function pdfWarning(alert: SafetyAlert, medicines: Medicine[], lang: Lang, t: (key: string) => string): PdfWarning {
+  const copy = warningCopy(alert, medicines, lang, t);
+  return {
+    label: copy.label,
+    title: copy.title,
+    body: copy.body,
+    source: t("alerts.source").replace("{name}", alert.sourceName),
+  };
+}
+
+function pdfMedicine(medicine: Medicine, lang: Lang, t: (key: string) => string): PdfMedicine {
+  return {
+    name: displayName(medicine, lang),
+    ingredient: medicine.ingredient,
+    dose: formatDoseOrDash(medicine.dose, lang),
+    times: medicine.timesPerDay === null ? "—" : formatTimes(medicine.timesPerDay, lang),
+    days: formatDays(medicine.days, lang),
+    clinic: medicine.clinic,
+    estimated: medicine.timeSlotsEstimated ? t("results.estimated") : "",
+  };
+}
+
+function pdfSlots(medicines: Medicine[], lang: Lang, t: (key: string) => string): PdfSlot[] {
+  return slotOrder
+    .map((id) => ({
+      label: t(`slot.${id}`),
+      time: formatClock(slotTimes[id], lang),
+      items: medicines
+        .filter((medicine) => medicineSlots(medicine).includes(id))
+        .map((medicine) => ({ name: shortName(medicine, lang), dose: doseAmount(medicine.dose, lang) })),
+    }))
+    .filter((slot) => slot.items.length > 0);
+}
+
+function formatDoseOrDash(dose: string, lang: Lang) {
+  return formatDose(dose, lang) || "—";
 }
 
 function Schedule({
