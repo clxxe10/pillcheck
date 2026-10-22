@@ -129,6 +129,13 @@ export function clinicCountLabel(count: number, lang: Lang) {
   return count === 1 ? "From 1 clinic" : `From ${count} clinics`;
 }
 
+/** Dated MFDS rows use a Korean agency name. Other sources keep the stored label. */
+export function sourceLine(sourceName: string, t: (key: string) => string) {
+  const dated = sourceName.match(/^MFDS DUR \(data as of (\d{4}-\d{2}-\d{2})\)$/);
+  if (dated) return t("alerts.sourceDur").replace("{date}", dated[1]);
+  return t("alerts.source").replace("{name}", sourceName);
+}
+
 export function issueCountLabel(count: number, lang: Lang) {
   if (lang === "ko") return `문제 ${count}건`;
   return count === 1 ? "1 issue found" : `${count} issues found`;

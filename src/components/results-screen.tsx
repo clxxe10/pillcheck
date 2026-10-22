@@ -19,6 +19,7 @@ import {
   reviewCountLabel,
   shortName,
   sourceKindLabel,
+  sourceLine,
   slotOrder,
   slotTimes,
   summaryLabel,
@@ -81,7 +82,7 @@ export function ResultsScreen() {
     });
     const warnings = alerts.map((alert) => {
       const copy = warningCopy(alert, medicines, lang, t);
-      const source = t("alerts.source").replace("{name}", alert.sourceName);
+      const source = sourceLine(alert.sourceName, t);
       return `${copy.label}: ${copy.title}\n${copy.body}\n${source}`;
     });
     return buildShareText({ medicines: lines, warnings, disclaimer: t("disclaimer") });
@@ -304,7 +305,7 @@ function AlertSummary({
 function ResultAlert({ alert, medicines }: { alert: SafetyAlert; medicines: Medicine[] }) {
   const { t, lang } = useTranslation();
   const copy = warningCopy(alert, medicines, lang, t);
-  const source = t("alerts.source").replace("{name}", alert.sourceName);
+  const source = sourceLine(alert.sourceName, t);
   return (
     <div
       className="py-4 lg:py-[18px]"
@@ -561,7 +562,7 @@ function pdfWarning(alert: SafetyAlert, medicines: Medicine[], lang: Lang, t: (k
     label: copy.label,
     title: copy.title,
     body: copy.body,
-    source: t("alerts.source").replace("{name}", alert.sourceName),
+    source: sourceLine(alert.sourceName, t),
   };
 }
 

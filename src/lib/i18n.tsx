@@ -136,6 +136,7 @@ const en = {
   },
   alerts: {
     source: "Source: {name}",
+    sourceDur: "Source: MFDS DUR (data as of {date})",
     duplicate: {
       label: "Duplicate ingredient",
       homeTitle: "{a} and {b} both contain {ingredient}",
@@ -373,6 +374,7 @@ const ko: typeof en = {
   },
   alerts: {
     source: "출처: {name}",
+    sourceDur: "출처: 식약처 DUR ({date} 기준)",
     duplicate: {
       label: "성분 중복",
       homeTitle: "{a}와 {b}에 {ingredient} 성분이 함께 들어 있습니다",
