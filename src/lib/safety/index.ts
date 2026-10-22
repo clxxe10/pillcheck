@@ -116,7 +116,7 @@ function componentsOf(medicines: Medicine[]): Component[] {
   const components: Component[] = [];
   for (const medicine of medicines) {
     const count = doseCount(medicine.dose);
-    const timesPerDay = medicine.timesPerDay > 0 ? medicine.timesPerDay : 0;
+    const timesPerDay = medicine.timesPerDay !== null && medicine.timesPerDay > 0 ? medicine.timesPerDay : 0;
     for (const part of medicine.ingredient.split(",")) {
       const name = canonicalIngredient(part);
       const mg = strengthMg(part);
@@ -216,13 +216,13 @@ export function checkSafety(medicines: Medicine[], dur: DurPair[] | null = null)
     const limit = limitByName.get(name);
     if (!limit) continue;
     let sum = 0;
-    let counted = false;
+    const countedIds: string[] = [];
     for (const component of list) {
       if (component.mg === null || component.count === null || component.timesPerDay <= 0) continue;
       sum += component.count * component.timesPerDay * component.mg;
-      counted = true;
+      countedIds.push(component.medicineId);
     }
-    if (!counted) continue;
+    if (countedIds.length === 0) continue;
     const total = Math.round(sum * 100) / 100;
     const ratio = total / limit.maxDailyMg;
     if (ratio < limits.cautionRatio) continue;
@@ -232,7 +232,7 @@ export function checkSafety(medicines: Medicine[], dur: DurPair[] | null = null)
       severity: total > limit.maxDailyMg ? "danger" : "warning",
       sourceName: limit.sourceName,
       sourceUrl: limit.sourceUrl,
-      medicineIds: [...new Set(list.map((item) => item.medicineId))],
+      medicineIds: [...new Set(countedIds)],
       ingredient: name,
       totalMg: total,
       limitMg: limit.maxDailyMg,

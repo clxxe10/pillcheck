@@ -20,6 +20,7 @@ import {
   formatToday,
   issueCountLabel,
   medicineCount,
+  medicineSlots,
   nextDose,
   nextDoseBadge,
   slotTimes,
@@ -158,7 +159,7 @@ function FilledHome({ medicines, alerts }: { medicines: Medicine[]; alerts: Safe
   const now = useNow();
   const upcoming = now ? nextDose(medicines, new Date(now)) : null;
   const slot: DoseSlot = upcoming?.slot ?? firstSlot(medicines);
-  const doseMeds = medicines.filter((item) => item.timeSlots.includes(slot));
+  const doseMeds = medicines.filter((item) => medicineSlots(item).includes(slot));
   const reviewCount = medicines.filter((item) => item.confidence === "low").length;
 
   return (
@@ -273,7 +274,7 @@ function FilledHome({ medicines, alerts }: { medicines: Medicine[]; alerts: Safe
 
 function firstSlot(list: Medicine[]): DoseSlot {
   const order: DoseSlot[] = ["morning", "lunch", "evening", "bedtime"];
-  return order.find((slot) => list.some((item) => item.timeSlots.includes(slot))) ?? "evening";
+  return order.find((slot) => list.some((item) => medicineSlots(item).includes(slot))) ?? "evening";
 }
 
 function StatCard({

@@ -11,6 +11,7 @@ function medicine(partial: Pick<Medicine, "id" | "ingredient" | "dose" | "timesP
     days: null,
     timeSlots: [],
     sourceImageIndex: 0,
+    sourceType: "prescription_bag",
     confidence: "high",
     clinic: "",
     ...partial,
@@ -82,6 +83,28 @@ describe("checkSafety", () => {
     ]);
     assert.equal(alerts.some((alert) => alert.kind === "contraindicated" && alert.sourceName === "MFDS DUR"), true);
     assert.equal(alerts.some((alert) => alert.kind === "caution"), false);
+  });
+
+  it("keeps duplicate and combination checks when the daily dose is not entered yet", () => {
+    const alerts = checkSafety([
+      medicine({ id: "rx", ingredient: "Acetaminophen 500 mg", dose: "2정", timesPerDay: 4 }),
+      medicine({
+        id: "box",
+        ingredient: "Acetaminophen 500 mg",
+        dose: "",
+        timesPerDay: null,
+      }),
+      medicine({ id: "asa", ingredient: "Aspirin, low dose 100 mg", dose: "1정", timesPerDay: 1 }),
+      medicine({ id: "ibu", ingredient: "Ibuprofen 400 mg", dose: "", timesPerDay: null }),
+    ]);
+    const daily = alerts.find((alert) => alert.kind === "daily");
+    assert.deepEqual(daily?.medicineIds, ["rx"]);
+    assert.equal(daily?.totalMg, 4000);
+    assert.deepEqual(
+      alerts.find((alert) => alert.kind === "duplicate")?.medicineIds,
+      ["rx", "box"],
+    );
+    assert.equal(alerts.some((alert) => alert.kind === "caution" && alert.ingredient === "aspirin+ibuprofen"), true);
   });
 
   it("lets an official DUR pair replace the milder caution for the same medicines", () => {

@@ -14,6 +14,7 @@ import {
   displayName,
   formatDays,
   formatDose,
+  medicineSlots,
   slotOrder,
   sourcePlaceLabel,
 } from "@/lib/format";
@@ -45,9 +46,9 @@ export function EditSheet({
   const [name, setName] = useState(displayName(medicine, lang));
   const [ingredient, setIngredient] = useState(medicine.ingredient);
   const [dose, setDose] = useState(formatDose(medicine.dose, lang));
-  const [times, setTimes] = useState(medicine.timesPerDay);
+  const [times, setTimes] = useState<number | null>(medicine.timesPerDay);
   const [days, setDays] = useState<number | null>(medicine.days);
-  const [slots, setSlots] = useState<DoseSlot[]>(medicine.timeSlots);
+  const [slots, setSlots] = useState<DoseSlot[]>(medicineSlots(medicine));
   const [photoOpen, setPhotoOpen] = useState(false);
 
   useEffect(() => {
@@ -243,9 +244,9 @@ export function EditSheet({
         <div className="grid grid-cols-2 gap-2.5">
           <Stepper
             label={t("edit.times")}
-            value={String(times)}
-            onLess={() => setTimes((value) => Math.max(1, value - 1))}
-            onMore={() => setTimes((value) => Math.min(8, value + 1))}
+            value={times === null ? "—" : String(times)}
+            onLess={() => setTimes((value) => (value === null ? null : Math.max(1, value - 1)))}
+            onMore={() => setTimes((value) => (value === null ? 1 : Math.min(8, value + 1)))}
           />
           <Stepper
             label={t("edit.days")}

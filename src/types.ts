@@ -2,23 +2,36 @@ export type DoseSlot = "morning" | "lunch" | "evening" | "bedtime";
 
 export type Confidence = "high" | "medium" | "low";
 
+/** What the photo showed. `unknown` is a loose tablet or a shot with no label. */
+export type SourceType =
+  | "prescription_bag"
+  | "prescription"
+  | "otc_box"
+  | "bottle"
+  | "blister"
+  | "unknown";
+
 /** One medicine as returned by /api/extract (and edited in the UI). */
 export type Medicine = {
   id: string;
-  /** Name exactly as printed on the bag or prescription (usually Korean). */
+  /** Name exactly as printed on the package (usually Korean). */
   name: string;
   /** English name: brand romanized or generic, with strength. */
   nameEn: string;
   /** Active ingredient(s) with strength, in English. */
   ingredient: string;
-  /** Amount per dose as printed, e.g. "1정", "2 tablets", "5 mL". */
+  /** Amount per dose as printed, e.g. "1정", "2 tablets", "5 mL". Empty when the label has none. */
   dose: string;
-  timesPerDay: number;
-  /** null = ongoing / not printed. */
+  /** null when the label does not say how many times a day. */
+  timesPerDay: number | null;
+  /** null = ongoing, or not printed. */
   days: number | null;
-  timeSlots: DoseSlot[];
+  /** null when the label does not say when to take it. */
+  timeSlots: DoseSlot[] | null;
   /** 0-based index into the photos sent with the request. */
   sourceImageIndex: number;
+  /** Package the medicine was read from. */
+  sourceType: SourceType;
   confidence: Confidence;
   /** Clinic name the user entered for the source photo. */
   clinic: string;
@@ -44,7 +57,7 @@ export type SafetyAlert = {
   reasonKo: string;
 };
 
-export type UnreadableReason = "blurry" | "glare" | "cropped" | "not_medicine" | "other";
+export type UnreadableReason = "blurry" | "glare" | "cropped" | "not_medicine" | "no_package" | "other";
 
 export type UnreadableImage = {
   /** 0-based index into the photos sent with the request. */

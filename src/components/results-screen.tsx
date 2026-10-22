@@ -20,9 +20,11 @@ import {
   formatClock,
   formatToday,
   issueCountLabel,
+  medicineSlots,
   resultsMeta,
   reviewCountLabel,
   shortName,
+  sourceKindLabel,
   slotOrder,
   slotTimes,
   summaryLabel,
@@ -52,7 +54,10 @@ export function ResultsScreen() {
 
   async function share() {
     const list = medicines
-      .map((medicine) => `${displayName(medicine, lang)} — ${medicine.ingredient} — ${doseLine(medicine, lang)} — ${medicine.clinic}`)
+      .map((medicine) => {
+        const kind = sourceKindLabel(medicine.sourceType, lang);
+        return `${displayName(medicine, lang)} — ${medicine.ingredient} — ${doseLine(medicine, lang)} — ${medicine.clinic}${kind ? ` — ${kind}` : ""}`;
+      })
       .join("\n");
     const warnings = alerts
       .map((alert) => {
@@ -307,8 +312,15 @@ function MedicineCard({ medicine, onEdit }: { medicine: Medicine; onEdit: () => 
           gap: 8,
         }}
       >
-        <span className="text-[18px] lg:text-[19px]" style={{ fontWeight: 500, lineHeight: 1.2 }}>
-          {displayName(medicine, lang)}
+        <span style={{ display: "flex", flexDirection: "column", gap: 3, minWidth: 0 }}>
+          {sourceKindLabel(medicine.sourceType, lang) ? (
+            <span style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.2, color: "#6B6B72" }}>
+              {sourceKindLabel(medicine.sourceType, lang)}
+            </span>
+          ) : null}
+          <span className="text-[18px] lg:text-[19px]" style={{ fontWeight: 500, lineHeight: 1.2 }}>
+            {displayName(medicine, lang)}
+          </span>
         </span>
         {medicine.confidence === "low" ? (
           <span
@@ -387,7 +399,7 @@ function Schedule({
   const rows = (slot === "all" ? slotOrder : [slot])
     .map((id) => ({
       id,
-      meds: medicines.filter((item) => item.timeSlots.includes(id)),
+      meds: medicines.filter((item) => medicineSlots(item).includes(id)),
     }))
     .filter((row) => slot !== "all" || row.meds.length > 0);
 

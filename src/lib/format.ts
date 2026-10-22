@@ -1,6 +1,6 @@
 import type { Lang } from "@/lib/i18n";
 import { ingredientLabel } from "@/lib/safety";
-import type { DoseSlot, Medicine, SafetyAlert } from "@/types";
+import type { DoseSlot, Medicine, SafetyAlert, SourceType } from "@/types";
 
 export const slotOrder: DoseSlot[] = ["morning", "lunch", "evening", "bedtime"];
 
@@ -74,6 +74,21 @@ export function doseAmount(dose: string, lang: Lang) {
   return `${amount} ${unit.short[one ? 0 : 1]}`;
 }
 
+export function medicineSlots(medicine: Pick<Medicine, "timeSlots">): DoseSlot[] {
+  return medicine.timeSlots ?? [];
+}
+
+/** Prescription bags and sheets, or a retail box, bottle, or blister. */
+export function sourceKindLabel(sourceType: SourceType, lang: Lang) {
+  if (sourceType === "prescription_bag" || sourceType === "prescription") {
+    return lang === "ko" ? "처방약" : "Prescription";
+  }
+  if (sourceType === "otc_box" || sourceType === "bottle" || sourceType === "blister") {
+    return lang === "ko" ? "일반의약품" : "Over-the-counter";
+  }
+  return null;
+}
+
 export function formatTimes(count: number, lang: Lang) {
   if (lang === "ko") return `하루 ${count}회`;
   return `${count}× a day`;
@@ -87,6 +102,10 @@ export function formatDays(days: number | null, lang: Lang) {
 
 export function doseLine(medicine: Medicine, lang: Lang) {
   const dose = formatDose(medicine.dose, lang);
+  if (medicine.timesPerDay === null) {
+    if (dose) return dose;
+    return lang === "ko" ? "복용 방법을 입력해 주세요" : "Add how you take it";
+  }
   return `${dose ? `${dose} · ` : ""}${formatTimes(medicine.timesPerDay, lang)} · ${formatDays(medicine.days, lang)}`;
 }
 
@@ -153,7 +172,7 @@ export function formatToday(lang: Lang, variant: "home" | "short", now = new Dat
 
 /** Next scheduled slot at the default clock times, or the first one tomorrow. */
 export function nextDose(medicines: Medicine[], now = new Date()) {
-  const slots = slotOrder.filter((slot) => medicines.some((item) => item.timeSlots.includes(slot)));
+  const slots = slotOrder.filter((slot) => medicines.some((item) => medicineSlots(item).includes(slot)));
   if (slots.length === 0) return null;
   const minutesNow = now.getHours() * 60 + now.getMinutes();
   const at = (slot: DoseSlot) => {

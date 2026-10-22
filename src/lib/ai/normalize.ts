@@ -4,13 +4,15 @@ import type {
   DoseSlot,
   ExtractResponse,
   Medicine,
+  SourceType,
   UnreadableImage,
   UnreadableReason,
 } from "@/types";
 
 const SLOT_ORDER: DoseSlot[] = ["morning", "lunch", "evening", "bedtime"];
 const CONFIDENCE: Confidence[] = ["high", "medium", "low"];
-const REASONS: UnreadableReason[] = ["blurry", "glare", "cropped", "not_medicine", "other"];
+const SOURCE_TYPES: SourceType[] = ["prescription_bag", "prescription", "otc_box", "bottle", "blister", "unknown"];
+const REASONS: UnreadableReason[] = ["blurry", "glare", "cropped", "not_medicine", "no_package", "other"];
 
 const DEFAULT_SLOTS: Record<number, DoseSlot[]> = {
   1: ["morning"],
@@ -61,6 +63,7 @@ export function normalizeExtraction(raw: unknown, clinics: string[]): ExtractRes
     index !== null && index >= 0 && index < imageCount;
 
   const medicines: Medicine[] = [];
+  const unpackaged = new Set<number>();
   for (const entry of rawMedicines) {
     if (!entry || typeof entry !== "object") continue;
     const item = entry as Record<string, unknown>;
@@ -68,17 +71,42 @@ export function normalizeExtraction(raw: unknown, clinics: string[]): ExtractRes
     const nameEn = text(item.nameEn) || name;
     if (!name) continue;
 
-    let timeSlots = slots(item.timeSlots);
-    const times = int(item.timesPerDay);
-    const timesPerDay = times && times > 0 && times <= 12 ? times : Math.max(timeSlots.length, 1);
-    if (timeSlots.length === 0) timeSlots = DEFAULT_SLOTS[Math.min(timesPerDay, 4)] ?? ["morning"];
-
-    const days = int(item.days);
     const source = int(item.sourceImageIndex);
     const sourceImageIndex = inRange(source) ? source : 0;
-    const confidence = CONFIDENCE.includes(item.confidence as Confidence)
+    const sourceType = SOURCE_TYPES.includes(item.sourceType as SourceType)
+      ? (item.sourceType as SourceType)
+      : "prescription_bag";
+    if (sourceType === "unknown") {
+      unpackaged.add(sourceImageIndex);
+      continue;
+    }
+
+    const printedSlots = slots(item.timeSlots);
+    const times = int(item.timesPerDay);
+    const timesGiven = times !== null && times > 0 && times <= 12;
+    let timesPerDay: number | null;
+    let timeSlots: DoseSlot[] | null;
+    let scheduleMissing = false;
+    if (!timesGiven && printedSlots.length === 0) {
+      timesPerDay = null;
+      timeSlots = null;
+      scheduleMissing = true;
+    } else if (timesGiven && printedSlots.length === 0) {
+      timesPerDay = times;
+      timeSlots = DEFAULT_SLOTS[Math.min(times, 4)] ?? ["morning"];
+    } else if (!timesGiven) {
+      timeSlots = printedSlots;
+      timesPerDay = printedSlots.length;
+    } else {
+      timesPerDay = times;
+      timeSlots = printedSlots;
+    }
+
+    const days = int(item.days);
+    let confidence = CONFIDENCE.includes(item.confidence as Confidence)
       ? (item.confidence as Confidence)
       : "low";
+    if (scheduleMissing) confidence = "low";
 
     medicines.push({
       id: `med-${medicines.length + 1}`,
@@ -90,6 +118,7 @@ export function normalizeExtraction(raw: unknown, clinics: string[]): ExtractRes
       days: days && days > 0 ? Math.min(days, 365) : null,
       timeSlots,
       sourceImageIndex,
+      sourceType,
       confidence,
       clinic: clinics[sourceImageIndex]?.trim() ?? "",
     });
@@ -108,6 +137,10 @@ export function normalizeExtraction(raw: unknown, clinics: string[]): ExtractRes
         : "other";
       unreadable.push({ index, reason });
     }
+  }
+  for (const index of unpackaged) {
+    if (readImages.has(index) || unreadable.some((item) => item.index === index)) continue;
+    unreadable.push({ index, reason: "no_package" });
   }
   if (medicines.length === 0 && unreadable.length === 0) {
     for (let index = 0; index < imageCount; index += 1) unreadable.push({ index, reason: "other" });

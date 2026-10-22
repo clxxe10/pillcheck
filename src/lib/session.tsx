@@ -3,7 +3,7 @@
 import { samplePhotos, sampleResult } from "@/lib/mock";
 import { checkSafety } from "@/lib/safety";
 import { requestSafety } from "@/lib/safety-client";
-import type { Medicine, SafetyAlert } from "@/types";
+import type { Medicine, SafetyAlert, SourceType } from "@/types";
 import { useSyncExternalStore } from "react";
 
 /** Results live only in this tab's sessionStorage; nothing is sent back to the server. */
@@ -32,6 +32,19 @@ function demoState(hasResults: boolean): SessionState {
   };
 }
 
+const SOURCE_TYPES: SourceType[] = ["prescription_bag", "prescription", "otc_box", "bottle", "blister", "unknown"];
+
+function storedMedicine(item: Medicine): Medicine {
+  const sourceType = SOURCE_TYPES.includes(item.sourceType) ? item.sourceType : "prescription_bag";
+  const timesPerDay = typeof item.timesPerDay === "number" && item.timesPerDay > 0 ? item.timesPerDay : null;
+  return {
+    ...item,
+    sourceType,
+    timesPerDay,
+    timeSlots: Array.isArray(item.timeSlots) ? item.timeSlots : null,
+  };
+}
+
 const serverState = demoState(false);
 
 function readStored(): SessionState | null {
@@ -41,7 +54,7 @@ function readStored(): SessionState | null {
   try {
     const parsed = JSON.parse(raw) as Partial<SessionState>;
     if (!parsed || !Array.isArray(parsed.medicines) || !Array.isArray(parsed.photos)) return null;
-    const medicines = parsed.medicines as Medicine[];
+    const medicines = (parsed.medicines as Medicine[]).map(storedMedicine);
     const storedAlerts = Array.isArray(parsed.alerts) ? parsed.alerts : [];
     const alerts = storedAlerts.every((alert) => alert && typeof alert.kind === "string")
       ? (storedAlerts as SafetyAlert[])

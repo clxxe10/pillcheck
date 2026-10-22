@@ -9,6 +9,7 @@
       "days": 5,
       "timeSlots": ["morning", "lunch", "evening"],
       "sourceImageIndex": 0,
+      "sourceType": "prescription_bag",
       "confidence": "high"
     },
     {
@@ -20,6 +21,7 @@
       "days": 3,
       "timeSlots": ["morning", "evening"],
       "sourceImageIndex": 1,
+      "sourceType": "prescription_bag",
       "confidence": "low"
     },
     {
@@ -31,6 +33,7 @@
       "days": 5,
       "timeSlots": ["morning", "lunch", "evening"],
       "sourceImageIndex": 1,
+      "sourceType": "prescription_bag",
       "confidence": "high"
     },
     {
@@ -42,6 +45,7 @@
       "days": 0,
       "timeSlots": ["morning"],
       "sourceImageIndex": 2,
+      "sourceType": "prescription_bag",
       "confidence": "low"
     },
     {
@@ -53,6 +57,7 @@
       "days": 5,
       "timeSlots": ["bedtime"],
       "sourceImageIndex": 1,
+      "sourceType": "prescription_bag",
       "confidence": "high"
     }
   ],
