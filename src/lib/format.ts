@@ -246,6 +246,24 @@ export function warningCopy(alert: SafetyAlert, medicines: Medicine[], lang: Lan
     };
   }
   const kind = alert.kind === "contraindicated" || alert.kind === "class" ? alert.kind : "caution";
+  if (alert.reasons && alert.reasons.length > 1) {
+    const lines = alert.reasons.map((item) => {
+      const itemKind = item.kind === "contraindicated" || item.kind === "class" ? item.kind : "caution";
+      const detail = (lang === "ko" ? item.reasonKo : item.reasonEn).trim();
+      const source = item.sourceName.replace(/ \(data as of [^)]+\)$/, "");
+      return {
+        label: `${t(`alerts.${itemKind}.label`)} (${source})`,
+        detail: detail || t(`alerts.${itemKind}.body`),
+      };
+    });
+    return {
+      label: t(`alerts.${kind}.label`),
+      homeTitle: pair,
+      title: pair,
+      body: lines.map((line) => `${line.label}\n${line.detail}`).join("\n"),
+      lines,
+    };
+  }
   return {
     label: t(`alerts.${kind}.label`),
     homeTitle: pair,

@@ -43,6 +43,15 @@ export type AlertSeverity = "danger" | "warning";
 
 export type WarningKind = "duplicate" | "daily" | "contraindicated" | "class" | "caution";
 
+/** One ground inside a combined pair card. */
+export type AlertReason = {
+  kind: WarningKind;
+  sourceName: string;
+  sourceUrl: string;
+  reasonEn: string;
+  reasonKo: string;
+};
+
 /** A rule-based warning. Copy is rendered from `kind` so it stays in both languages. */
 export type SafetyAlert = {
   id: string;
@@ -57,6 +66,8 @@ export type SafetyAlert = {
   limitMg: number | null;
   reasonEn: string;
   reasonKo: string;
+  /** Present when several rules were folded into this card. Ordered most severe first. */
+  reasons?: AlertReason[];
 };
 
 export type UnreadableReason = "blurry" | "glare" | "cropped" | "not_medicine" | "no_package" | "other";

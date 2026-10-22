@@ -324,9 +324,22 @@ function ResultAlert({ alert, medicines }: { alert: SafetyAlert; medicines: Medi
       <div className="text-[19px] lg:text-[20px]" style={{ fontWeight: 600, lineHeight: 1.25 }}>
         {copy.title}
       </div>
-      <p className="leading-[1.45] lg:leading-[1.5]" style={{ margin: 0, fontWeight: 400, fontSize: 16, color: "#4A4A50" }}>
-        {copy.body}
-      </p>
+      {copy.lines && copy.lines.length > 1 ? (
+        <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+          {copy.lines.map((line) => (
+            <li key={line.label}>
+              <div style={{ fontWeight: 600, fontSize: 16, lineHeight: 1.35, color: "#111" }}>{line.label}</div>
+              <p className="leading-[1.45]" style={{ margin: "2px 0 0", fontWeight: 400, fontSize: 16, color: "#4A4A50" }}>
+                {line.detail}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="leading-[1.45] lg:leading-[1.5]" style={{ margin: 0, fontWeight: 400, fontSize: 16, color: "#4A4A50" }}>
+          {copy.body}
+        </p>
+      )}
       {alert.sourceUrl ? (
         <a href={alert.sourceUrl} target="_blank" rel="noreferrer" style={sourceStyle}>
           {source}

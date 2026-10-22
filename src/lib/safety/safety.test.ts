@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { sampleResult } from "@/lib/mock";
 import { canonicalIngredient, checkSafety, ingredientSearchNames } from "@/lib/safety";
 import { collectDurFindings } from "@/lib/safety/dur-match";
+import { durSnapshotDate, snapshotCovers } from "@/lib/safety/dur-snapshot";
 import type { Medicine } from "@/types";
 
 function medicine(partial: Pick<Medicine, "id" | "ingredient" | "dose" | "timesPerDay">): Medicine {
@@ -36,14 +37,14 @@ describe("checkSafety", () => {
       })),
       [
         {
-          id: "caution:aspirin+ibuprofen",
-          kind: "caution",
+          id: "pair:aspirin+ibuprofen",
+          kind: "class",
           severity: "warning",
           ingredient: "aspirin+ibuprofen",
-          medicineIds: ["med-3", "med-4"],
+          medicineIds: ["med-4", "med-3"],
           totalMg: null,
           limitMg: null,
-          sourceName: "FDA",
+          sourceName: `MFDS DUR (data as of ${durSnapshotDate})`,
         },
         {
           id: "daily:acetaminophen",
@@ -67,6 +68,14 @@ describe("checkSafety", () => {
         },
       ],
     );
+    assert.deepEqual(
+      alerts[0]?.reasons?.map((reason) => ({ kind: reason.kind, sourceName: reason.sourceName })),
+      [
+        { kind: "class", sourceName: `MFDS DUR (data as of ${durSnapshotDate})` },
+        { kind: "caution", sourceName: "FDA" },
+      ],
+    );
+    assert.equal(alerts.length, 3);
   });
 
   it("marks a dose over the published limit as danger", () => {
@@ -106,7 +115,8 @@ describe("checkSafety", () => {
       alerts.find((alert) => alert.kind === "duplicate")?.medicineIds,
       ["rx", "box"],
     );
-    assert.equal(alerts.some((alert) => alert.kind === "caution" && alert.ingredient === "aspirin+ibuprofen"), true);
+    const pair = alerts.find((alert) => alert.ingredient === "aspirin+ibuprofen");
+    assert.equal(pair?.reasons?.some((reason) => reason.kind === "caution"), true);
   });
 
   it("lets an official DUR pair replace the milder caution for the same medicines", () => {
@@ -144,11 +154,15 @@ describe("checkSafety", () => {
       reasonKo: "식약처 DUR 효능군 중복입니다. (해열진통소염제)",
     };
     const added = checkSafety(sampleResult().medicines, { contraindicated: [], sameClass: [classPair] });
-    const match = added.find((alert) => alert.kind === "class");
+    const match = added.find((alert) => alert.ingredient === "aspirin+ibuprofen");
+    assert.equal(match?.kind, "class");
     assert.equal(match?.severity, "warning");
     assert.equal(match?.sourceName, "MFDS DUR");
-    assert.equal(match?.ingredient, "aspirin+ibuprofen");
-    assert.equal(added.some((alert) => alert.kind === "caution"), true);
+    assert.deepEqual(
+      match?.reasons?.map((reason) => reason.kind),
+      ["class", "caution"],
+    );
+    assert.equal(added.filter((alert) => alert.ingredient === "aspirin+ibuprofen").length, 1);
 
     const blocked = checkSafety(sampleResult().medicines, {
       contraindicated: [
@@ -185,6 +199,8 @@ describe("checkSafety", () => {
     assert.equal(found.contraindicated[0]?.reasonKo, "출혈 위험");
     assert.equal(found.sameClass.length, 1);
     assert.equal(found.sameClass[0]?.a === "aspirin" || found.sameClass[0]?.b === "aspirin", true);
+    assert.equal(snapshotCovers("ibuprofen"), true);
+    assert.equal(snapshotCovers("notarealdrug"), false);
   });
 
   it("treats the DUR series name as the drug class and ignores deleted rows", () => {

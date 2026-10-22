@@ -1,6 +1,7 @@
 import interactionsJson from "@/lib/safety/interactions.json";
 import limitsJson from "@/lib/safety/limits.json";
-import type { Medicine, SafetyAlert, WarningKind } from "@/types";
+import { snapshotReport } from "@/lib/safety/dur-snapshot";
+import type { AlertReason, Medicine, SafetyAlert, WarningKind } from "@/types";
 
 /**
  * Rule-based safety check. Warnings come only from these tables and, when the
@@ -29,6 +30,8 @@ export type DurPair = {
   b: string;
   reasonEn: string;
   reasonKo: string;
+  /** Calendar date of the DUR rows, `YYYY-MM-DD`. */
+  asOf?: string;
 };
 
 export type DurClassPair = {
@@ -36,6 +39,8 @@ export type DurClassPair = {
   b: string;
   reasonEn: string;
   reasonKo: string;
+  /** Calendar date of the DUR rows, `YYYY-MM-DD`. */
+  asOf?: string;
 };
 
 /** Live DUR rows for this bag. An empty list is a successful lookup with no matching pair. */
@@ -265,11 +270,22 @@ function pushPair(
 }
 
 const DUR_SOURCE = "https://www.data.go.kr/data/15056780/openapi.do";
+const KIND_RANK: Record<WarningKind, number> = {
+  contraindicated: 0,
+  class: 1,
+  caution: 2,
+  daily: 3,
+  duplicate: 4,
+};
 
-function asReport(dur: DurReport | DurPair[] | null): DurReport | null {
-  if (!dur) return null;
+function durSource(asOf?: string) {
+  return asOf ? `MFDS DUR (data as of ${asOf})` : "MFDS DUR";
+}
+
+function asReport(dur: DurReport | DurPair[] | null, names: Iterable<string>): DurReport | null {
   if (Array.isArray(dur)) return { contraindicated: dur, sameClass: [] };
-  return dur;
+  if (dur) return dur;
+  return snapshotReport(names);
 }
 
 /**
@@ -333,7 +349,7 @@ export function checkSafety(medicines: Medicine[], dur: DurReport | DurPair[] | 
     });
   }
 
-  const report = asReport(dur);
+  const report = asReport(dur, byName.keys());
   const merged = new Map<string, DurPair & { fromDur: boolean }>();
   const seed = report
     ? report.contraindicated.map((pair) => ({ ...pair, fromDur: true }))
@@ -366,7 +382,7 @@ export function checkSafety(medicines: Medicine[], dur: DurReport | DurPair[] | 
       {
         a: pair.a,
         b: pair.b,
-        sourceName: "MFDS DUR",
+        sourceName: pair.fromDur ? durSource(pair.asOf) : (local?.sourceName ?? "MFDS DUR"),
         sourceUrl: local?.sourceUrl || DUR_SOURCE,
         reasonEn: pair.fromDur ? pair.reasonEn : (local?.reasonEn ?? pair.reasonEn),
         reasonKo: pair.fromDur ? pair.reasonKo : (local?.reasonKo ?? pair.reasonKo),
@@ -387,7 +403,7 @@ export function checkSafety(medicines: Medicine[], dur: DurReport | DurPair[] | 
         {
           a: pair.a,
           b: pair.b,
-          sourceName: "MFDS DUR",
+          sourceName: durSource(pair.asOf),
           sourceUrl: DUR_SOURCE,
           reasonEn: pair.reasonEn,
           reasonKo: pair.reasonKo,
@@ -401,16 +417,48 @@ export function checkSafety(medicines: Medicine[], dur: DurReport | DurPair[] | 
     pushPair(alerts, "caution", row, components, row.aspirinMaxMg);
   }
 
-  const rank: Record<WarningKind, number> = {
-    contraindicated: 0,
-    class: 1,
-    caution: 2,
-    daily: 3,
-    duplicate: 4,
-  };
-  return alerts.sort((a, b) => {
+  return combinePairAlerts(alerts).sort((a, b) => {
     if (a.severity !== b.severity) return a.severity === "danger" ? -1 : 1;
-    if (rank[a.kind] !== rank[b.kind]) return rank[a.kind] - rank[b.kind];
+    if (KIND_RANK[a.kind] !== KIND_RANK[b.kind]) return KIND_RANK[a.kind] - KIND_RANK[b.kind];
     return (b.totalMg ?? 0) - (a.totalMg ?? 0) || a.id.localeCompare(b.id);
   });
+}
+
+const PAIR_KINDS = new Set<WarningKind>(["contraindicated", "class", "caution"]);
+
+/** Fold every rule about the same two ingredients into one card. */
+function combinePairAlerts(alerts: SafetyAlert[]): SafetyAlert[] {
+  const groups = new Map<string, SafetyAlert[]>();
+  const rest: SafetyAlert[] = [];
+  for (const alert of alerts) {
+    if (!PAIR_KINDS.has(alert.kind) || !alert.ingredient.includes("+")) {
+      rest.push(alert);
+      continue;
+    }
+    const list = groups.get(alert.ingredient) ?? [];
+    list.push(alert);
+    groups.set(alert.ingredient, list);
+  }
+
+  const combined = [...groups.values()].map((list) => {
+    const ranked = [...list].sort(
+      (a, b) => Number(b.severity === "danger") - Number(a.severity === "danger") || KIND_RANK[a.kind] - KIND_RANK[b.kind],
+    );
+    const primary = ranked[0];
+    if (ranked.length === 1) return primary;
+    const reasons: AlertReason[] = ranked.map((alert) => ({
+      kind: alert.kind,
+      sourceName: alert.sourceName,
+      sourceUrl: alert.sourceUrl,
+      reasonEn: alert.reasonEn,
+      reasonKo: alert.reasonKo,
+    }));
+    return {
+      ...primary,
+      id: `pair:${primary.ingredient}`,
+      medicineIds: [...new Set(ranked.flatMap((alert) => alert.medicineIds))],
+      reasons,
+    };
+  });
+  return [...combined, ...rest];
 }

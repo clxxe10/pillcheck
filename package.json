@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test src/lib/safety/safety.test.ts src/lib/ai/normalize.test.ts src/lib/results-pdf.test.ts"
+    "test": "tsx --test src/lib/safety/safety.test.ts src/lib/ai/normalize.test.ts src/lib/results-pdf.test.ts",
+    "dur:update": "tsx src/lib/safety/update-dur-snapshot.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.137.0",

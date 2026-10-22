@@ -112,3 +112,16 @@ export function collectDurFindings(
 
   return { contraindicated: [...contraindicated.values()], sameClass };
 }
+
+/** Live rows overwrite the same pair from the snapshot. */
+export function mergeDurReports(base: DurReport, extra: DurReport): DurReport {
+  const contraindicated = new Map<string, DurPair>();
+  const sameClass = new Map<string, DurClassPair>();
+  for (const pair of [...base.contraindicated, ...extra.contraindicated]) {
+    contraindicated.set(pairId(pair.a, pair.b), pair);
+  }
+  for (const pair of [...base.sameClass, ...extra.sameClass]) {
+    sameClass.set(pairId(pair.a, pair.b), pair);
+  }
+  return { contraindicated: [...contraindicated.values()], sameClass: [...sameClass.values()] };
+}

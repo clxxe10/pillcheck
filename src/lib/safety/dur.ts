@@ -1,7 +1,8 @@
 import "server-only";
 
 import { canonicalIngredient, ingredientKoreanNames, ingredientNames, type DurReport } from "@/lib/safety";
-import { collectDurFindings } from "@/lib/safety/dur-match";
+import { collectDurFindings, mergeDurReports } from "@/lib/safety/dur-match";
+import { snapshotCovers, snapshotReport } from "@/lib/safety/dur-snapshot";
 import type { Medicine } from "@/types";
 
 /** Ingredient-level DUR. https://www.data.go.kr/data/15056780/openapi.do */
@@ -155,12 +156,12 @@ async function tabooFor(label: string, rawKey: string) {
   }
 }
 
-async function classTable(rawKey: string) {
+async function classFor(label: string, rawKey: string) {
   try {
-    return await rowsFor(SAME_CLASS, { numOfRows: "500" }, rawKey);
+    return { rows: await rowsFor(SAME_CLASS, { ingrName: label, numOfRows: "100" }, rawKey), failed: false };
   } catch (error) {
     console.error(`[api/safety] DUR lookup failed: ${safeMessage(error)}`);
-    return null;
+    return { rows: [], failed: true };
   }
 }
 
@@ -202,15 +203,17 @@ async function rowsForIngredient(
 ) {
   const labels = [...ingredientKoreanNames(name)];
   let taboo: Record<string, unknown>[] = [];
+  let classRows: Record<string, unknown>[] = [];
   let failed = false;
   for (const label of labels) {
-    const found = await tabooFor(label, rawKey);
-    failed = found.failed;
-    if (found.failed || found.rows.length === 0) continue;
-    taboo = found.rows;
+    const [tabooFound, classFound] = await Promise.all([tabooFor(label, rawKey), classFor(label, rawKey)]);
+    failed = tabooFound.failed && classFound.failed;
+    if (tabooFound.rows.length === 0 && classFound.rows.length === 0) continue;
+    taboo = tabooFound.rows;
+    classRows = classFound.rows;
     break;
   }
-  if (taboo.length > 0 || failed || known) return { taboo, failed };
+  if (taboo.length > 0 || classRows.length > 0 || failed || known) return { taboo, classRows, failed };
 
   const products = new Set<string>();
   for (const medicine of medicines) {
@@ -223,10 +226,23 @@ async function rowsForIngredient(
   for (const itemName of products) {
     const official = await koreanFromProduct(itemName, name, rawKey);
     if (!official || labels.includes(official)) continue;
-    const found = await tabooFor(official, rawKey);
-    return { taboo: found.rows, failed: found.failed };
+    const [tabooFound, classFound] = await Promise.all([tabooFor(official, rawKey), classFor(official, rawKey)]);
+    return {
+      taboo: tabooFound.rows,
+      classRows: classFound.rows,
+      failed: tabooFound.failed && classFound.failed,
+    };
   }
-  return { taboo, failed: false };
+  return { taboo, classRows, failed: false };
+}
+
+function todaySeoul() {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
 }
 
 async function mapPool<T, R>(items: T[], limit: number, run: (item: T) => Promise<R>) {
@@ -243,38 +259,36 @@ async function mapPool<T, R>(items: T[], limit: number, run: (item: T) => Promis
   return results;
 }
 
-/** Official DUR pairs among these medicines. Null means every live lookup failed and local rules should stand alone. */
+/** Snapshot pairs, plus a live lookup only for ingredients the snapshot does not list. */
 export async function findDurReport(
   medicines: Pick<Medicine, "ingredient" | "name" | "nameEn">[],
 ): Promise<DurReport | null> {
-  const rawKey = process.env.DATA_GO_KR_KEY?.trim();
   const names = ingredientNames(medicines as Medicine[]);
-  if (!rawKey || names.length === 0) return null;
+  const base = snapshotReport(names);
+  const missing = names.filter((name) => !snapshotCovers(name));
+  const rawKey = process.env.DATA_GO_KR_KEY?.trim();
+  if (!rawKey || missing.length === 0) return base;
   try {
-    const classRows = await classTable(rawKey);
-    const present = new Set<string>();
-    for (const row of classRows ?? []) {
-      const name = canonicalIngredient(
-        [row.INGR_ENG_NAME, row.INGR_NAME, row.INGR_KOR_NAME].filter((value) => typeof value === "string").join(" "),
-      );
-      if (name) present.add(name);
-    }
-    const found = await mapPool(names, 2, async (name) => {
+    const found = await mapPool(missing, 2, async (name) => {
       try {
-        return await rowsForIngredient(name, medicines, rawKey, present.has(name));
+        return await rowsForIngredient(name, medicines, rawKey, false);
       } catch (error) {
         console.error(`[api/safety] DUR lookup failed: ${safeMessage(error)}`);
-        return { taboo: [], failed: true };
+        return { taboo: [], classRows: [], failed: true };
       }
     });
-    if (classRows === null && found.every((item) => item.failed)) return null;
-    return collectDurFindings(
+    const live = collectDurFindings(
       found.flatMap((item) => item.taboo),
-      classRows ?? [],
+      found.flatMap((item) => item.classRows),
       names,
     );
+    const asOf = todaySeoul();
+    return mergeDurReports(base, {
+      contraindicated: live.contraindicated.map((pair) => ({ ...pair, asOf })),
+      sameClass: live.sameClass.map((pair) => ({ ...pair, asOf })),
+    });
   } catch (error) {
     console.error(`[api/safety] DUR lookup failed: ${safeMessage(error)}`);
-    return null;
+    return base;
   }
 }
