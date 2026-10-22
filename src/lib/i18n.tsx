@@ -155,6 +155,10 @@ const en = {
       label: "Do not combine",
       body: "This combination is listed as one to avoid.",
     },
+    class: {
+      label: "Same drug class",
+      body: "These medicines are in the same efficacy group.",
+    },
     caution: {
       label: "Use caution",
       body: "This combination needs extra care.",
@@ -200,8 +204,8 @@ const en = {
     doseTitle: "Daily dose limits",
     doseBody: "Total daily amount across all medicines.",
     near: "Near daily limit",
-    pairTitle: "Do-not-combine pairs",
-    pairBody: "From Korea's official drug safety data (MFDS DUR).",
+    pairTitle: "Official DUR checks",
+    pairBody: "Do-not-combine pairs and same drug class, from MFDS DUR. Saved do-not-combine pairs still apply if the live check is unavailable.",
     cautionTitle: "Use-with-caution pairs",
     cautionBody: "Well-known interactions with cited sources (FDA).",
     live: "See it in action",
@@ -388,6 +392,10 @@ const ko: typeof en = {
       label: "함께 복용 금지",
       body: "함께 쓰지 않도록 안내된 조합입니다.",
     },
+    class: {
+      label: "같은 효능군",
+      body: "같은 효능군으로 겹칩니다.",
+    },
     caution: {
       label: "주의해서 함께 복용",
       body: "함께 쓸 때 주의가 필요한 조합입니다.",
@@ -433,8 +441,8 @@ const ko: typeof en = {
     doseTitle: "하루 용량",
     doseBody: "모든 약을 합친 하루 총량.",
     near: "하루 한도에 가까움",
-    pairTitle: "함께 쓰면 안 되는 조합",
-    pairBody: "식약처 의약품안전사용서비스(DUR) 기준.",
+    pairTitle: "식약처 DUR 확인",
+    pairBody: "병용금기와 같은 효능군을 식약처 DUR에서 확인합니다. 실시간 조회가 안 되면 저장된 병용금기를 사용합니다.",
     cautionTitle: "주의해서 함께 쓰는 조합",
     cautionBody: "출처가 있는 알려진 상호작용 (FDA).",
     live: "실제로 보기",

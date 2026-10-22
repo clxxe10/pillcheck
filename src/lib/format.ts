@@ -245,7 +245,7 @@ export function warningCopy(alert: SafetyAlert, medicines: Medicine[], lang: Lan
       body: fill(t(over ? "alerts.daily.bodyDanger" : "alerts.daily.bodyCaution"), { total, limit, pct }),
     };
   }
-  const kind = alert.kind === "contraindicated" ? "contraindicated" : "caution";
+  const kind = alert.kind === "contraindicated" || alert.kind === "class" ? alert.kind : "caution";
   return {
     label: t(`alerts.${kind}.label`),
     homeTitle: pair,

@@ -41,7 +41,7 @@ export type Medicine = {
 
 export type AlertSeverity = "danger" | "warning";
 
-export type WarningKind = "duplicate" | "daily" | "contraindicated" | "caution";
+export type WarningKind = "duplicate" | "daily" | "contraindicated" | "class" | "caution";
 
 /** A rule-based warning. Copy is rendered from `kind` so it stays in both languages. */
 export type SafetyAlert = {

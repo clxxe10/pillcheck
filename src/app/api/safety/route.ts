@@ -1,5 +1,5 @@
-import { checkSafety, ingredientNames } from "@/lib/safety";
-import { findDurPairs } from "@/lib/safety/dur";
+import { checkSafety } from "@/lib/safety";
+import { findDurReport } from "@/lib/safety/dur";
 import type { Medicine, SourceType } from "@/types";
 
 export const maxDuration = 30;
@@ -72,6 +72,6 @@ export async function POST(request: Request) {
   if (typeof medicines === "string") {
     return Response.json({ error: "bad_request", message: medicines }, { status: 400, headers: noStore });
   }
-  const dur = await findDurPairs(ingredientNames(medicines));
+  const dur = await findDurReport(medicines);
   return Response.json({ warnings: checkSafety(medicines, dur) }, { headers: noStore });
 }

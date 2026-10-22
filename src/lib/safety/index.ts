@@ -31,6 +31,63 @@ export type DurPair = {
   reasonKo: string;
 };
 
+export type DurClassPair = {
+  a: string;
+  b: string;
+  reasonEn: string;
+  reasonKo: string;
+};
+
+/** Live DUR rows for this bag. An empty list is a successful lookup with no matching pair. */
+export type DurReport = {
+  contraindicated: DurPair[];
+  sameClass: DurClassPair[];
+};
+
+const SALTS = new Set([
+  "hydrochloride",
+  "hcl",
+  "sodium",
+  "potassium",
+  "calcium",
+  "magnesium",
+  "sulfate",
+  "sulphate",
+  "maleate",
+  "tartrate",
+  "besylate",
+  "besilate",
+  "mesylate",
+  "mesilate",
+  "citrate",
+  "acetate",
+  "phosphate",
+  "hyclate",
+  "monohydrate",
+  "dihydrate",
+  "trihydrate",
+  "succinate",
+  "fumarate",
+  "nitrate",
+  "bromide",
+  "chloride",
+  "oxide",
+  "valerate",
+  "gluconate",
+  "lactate",
+  "bitartrate",
+  "disoproxil",
+  "tosylate",
+  "camsylate",
+  "orotate",
+  "hemicalcium",
+  "lysine",
+  "arginine",
+  "hydrate",
+  "anhydrous",
+  "micronized",
+]);
+
 type Component = {
   medicineId: string;
   name: string;
@@ -56,7 +113,7 @@ const STOP = new Set(["dose", "doses", "low", "high", "oral", "tablet", "tablets
 const ALIASES: Record<string, string[]> = {
   acetaminophen: ["acetaminophen", "paracetamol", "아세트아미노펜"],
   ibuprofen: ["ibuprofen", "이부프로펜"],
-  aspirin: ["aspirin", "acetylsalicylic", "아스피린"],
+  aspirin: ["aspirin", "acetylsalicylic acid", "acetylsalicylic", "아스피린"],
   pseudoephedrine: ["pseudoephedrine", "슈도에페드린"],
   cetirizine: ["cetirizine", "세티리진"],
   warfarin: ["warfarin", "와파린"],
@@ -74,13 +131,40 @@ export function ingredientLabel(name: string, lang: "en" | "ko") {
 
 /** English lowercase ingredient name, or null when the text has no usable name. */
 export function canonicalIngredient(raw: string): string | null {
-  const text = raw.toLowerCase();
+  const text = raw
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣\s]+/g, " ")
+    .split(/\s+/)
+    .filter((word) => word && !SALTS.has(word) && !STOP.has(word))
+    .join(" ");
+  if (!text) return null;
   for (const [name, aliases] of Object.entries(ALIASES)) {
     if (aliases.some((alias) => text.includes(alias))) return name;
   }
   const word = text.match(/[a-z]{4,}/)?.[0];
   if (!word || STOP.has(word)) return null;
   return word;
+}
+
+/** Korean ingredient names DUR accepts as a filter. English filters are ignored by the live API. */
+export function ingredientKoreanNames(canonical: string): string[] {
+  return (ALIASES[canonical] ?? []).filter((alias) => /[가-힣]/.test(alias));
+}
+
+/** Spellings to try against DUR, most specific official name last. */
+export function ingredientSearchNames(canonical: string): string[] {
+  const primary = DISPLAY[canonical]?.en ?? canonical;
+  const aliases = ALIASES[canonical] ?? [];
+  const titled = [primary, ...aliases]
+    .filter((alias) => /[a-z]/i.test(alias) && !/[가-힣]/.test(alias))
+    .map((alias) =>
+      alias
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" "),
+    );
+  return [...new Set(titled)];
 }
 
 export function ingredientNames(medicines: Medicine[]): string[] {
@@ -154,7 +238,7 @@ function isLowDoseAspirin(component: Component, maxMg: number | undefined) {
 
 function pushPair(
   alerts: SafetyAlert[],
-  kind: Extract<WarningKind, "contraindicated" | "caution">,
+  kind: Extract<WarningKind, "contraindicated" | "caution" | "class">,
   row: { a: string; b: string; sourceName: string; sourceUrl: string; reasonEn: string; reasonKo: string },
   components: Component[],
   aspirinMaxMg?: number,
@@ -180,11 +264,19 @@ function pushPair(
   });
 }
 
+const DUR_SOURCE = "https://www.data.go.kr/data/15056780/openapi.do";
+
+function asReport(dur: DurReport | DurPair[] | null): DurReport | null {
+  if (!dur) return null;
+  if (Array.isArray(dur)) return { contraindicated: dur, sameClass: [] };
+  return dur;
+}
+
 /**
- * `dur` null uses the local contraindication table.
- * An array, including an empty one, is the official DUR result and replaces that table.
+ * `dur` null means the live lookup did not run, so only the local table is used.
+ * A report uses DUR pairs first and keeps a local contraindication when DUR has no row for it.
  */
-export function checkSafety(medicines: Medicine[], dur: DurPair[] | null = null): SafetyAlert[] {
+export function checkSafety(medicines: Medicine[], dur: DurReport | DurPair[] | null = null): SafetyAlert[] {
   const components = componentsOf(medicines);
   const alerts: SafetyAlert[] = [];
   const byName = new Map<string, Component[]>();
@@ -241,36 +333,81 @@ export function checkSafety(medicines: Medicine[], dur: DurPair[] | null = null)
     });
   }
 
-  const contraindicated: DurPair[] =
-    dur ??
-    interactions.contraindicated.map((row) => ({
-      a: row.a,
-      b: row.b,
-      reasonEn: row.reasonEn,
-      reasonKo: row.reasonKo,
-    }));
-  const contraindicatedRows = contraindicated.map((pair) => {
+  const report = asReport(dur);
+  const merged = new Map<string, DurPair & { fromDur: boolean }>();
+  const seed = report
+    ? report.contraindicated.map((pair) => ({ ...pair, fromDur: true }))
+    : interactions.contraindicated.map((row) => ({
+        a: row.a,
+        b: row.b,
+        reasonEn: row.reasonEn,
+        reasonKo: row.reasonKo,
+        fromDur: false,
+      }));
+  for (const pair of seed) merged.set(pairKey(pair.a, pair.b), pair);
+  if (report) {
+    for (const row of interactions.contraindicated) {
+      const key = pairKey(row.a, row.b);
+      if (merged.has(key)) continue;
+      merged.set(key, {
+        a: row.a,
+        b: row.b,
+        reasonEn: row.reasonEn,
+        reasonKo: row.reasonKo,
+        fromDur: false,
+      });
+    }
+  }
+  for (const pair of merged.values()) {
     const local = interactions.contraindicated.find((row) => pairKey(row.a, row.b) === pairKey(pair.a, pair.b));
-    return {
-      a: pair.a,
-      b: pair.b,
-      sourceName: local?.sourceName ?? "MFDS DUR",
-      sourceUrl: local?.sourceUrl || "https://www.data.go.kr/data/15056780/openapi.do",
-      reasonEn: pair.reasonEn,
-      reasonKo: pair.reasonKo,
-    };
-  });
-  for (const row of contraindicatedRows) pushPair(alerts, "contraindicated", row, components);
+    pushPair(
+      alerts,
+      "contraindicated",
+      {
+        a: pair.a,
+        b: pair.b,
+        sourceName: "MFDS DUR",
+        sourceUrl: local?.sourceUrl || DUR_SOURCE,
+        reasonEn: pair.fromDur ? pair.reasonEn : (local?.reasonEn ?? pair.reasonEn),
+        reasonKo: pair.fromDur ? pair.reasonKo : (local?.reasonKo ?? pair.reasonKo),
+      },
+      components,
+    );
+  }
 
   const blocked = new Set(
     alerts.filter((alert) => alert.kind === "contraindicated").map((alert) => alert.ingredient),
   );
+  if (report) {
+    for (const pair of report.sameClass) {
+      if (blocked.has(pairKey(pair.a, pair.b))) continue;
+      pushPair(
+        alerts,
+        "class",
+        {
+          a: pair.a,
+          b: pair.b,
+          sourceName: "MFDS DUR",
+          sourceUrl: DUR_SOURCE,
+          reasonEn: pair.reasonEn,
+          reasonKo: pair.reasonKo,
+        },
+        components,
+      );
+    }
+  }
   for (const row of interactions.caution) {
     if (blocked.has(pairKey(row.a, row.b))) continue;
     pushPair(alerts, "caution", row, components, row.aspirinMaxMg);
   }
 
-  const rank: Record<WarningKind, number> = { contraindicated: 0, caution: 1, daily: 2, duplicate: 3 };
+  const rank: Record<WarningKind, number> = {
+    contraindicated: 0,
+    class: 1,
+    caution: 2,
+    daily: 3,
+    duplicate: 4,
+  };
   return alerts.sort((a, b) => {
     if (a.severity !== b.severity) return a.severity === "danger" ? -1 : 1;
     if (rank[a.kind] !== rank[b.kind]) return rank[a.kind] - rank[b.kind];

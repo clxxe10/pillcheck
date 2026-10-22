@@ -336,8 +336,9 @@ export function LandingScreen() {
           </Reveal>
           <Reveal className="flex flex-col gap-3 rounded-3xl bg-white p-5 lg:col-span-5 lg:gap-6 lg:rounded-[28px] lg:p-8">
             <BlockTitle title={t("landing.pairTitle")} body={t("landing.pairBody")} small />
-            <div className="mt-auto flex items-center gap-2.5">
+            <div className="mt-auto flex flex-wrap items-center gap-2.5">
               <Chip tone="red">{t("landing.doNot")}</Chip>
+              <Chip tone="amber">{t("alerts.class.label")}</Chip>
               <span className="hidden text-[13px] text-[rgba(60,60,67,0.6)] lg:inline">Source: MFDS DUR</span>
             </div>
           </Reveal>

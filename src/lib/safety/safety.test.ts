@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { sampleResult } from "@/lib/mock";
-import { checkSafety } from "@/lib/safety";
+import { canonicalIngredient, checkSafety, ingredientSearchNames } from "@/lib/safety";
+import { collectDurFindings } from "@/lib/safety/dur-match";
 import type { Medicine } from "@/types";
 
 function medicine(partial: Pick<Medicine, "id" | "ingredient" | "dose" | "timesPerDay">): Medicine {
@@ -121,6 +122,100 @@ describe("checkSafety", () => {
     assert.equal(
       alerts.some((alert) => alert.kind === "contraindicated" && alert.severity === "danger"),
       true,
+    );
+  });
+
+  it("keeps the saved contraindication when a live DUR lookup has no row for it", () => {
+    const alerts = checkSafety(
+      [
+        medicine({ id: "med-1", ingredient: "Warfarin sodium 2 mg", dose: "1정", timesPerDay: 1 }),
+        medicine({ id: "med-2", ingredient: "Aspirin 100 mg", dose: "1정", timesPerDay: 1 }),
+      ],
+      { contraindicated: [], sameClass: [] },
+    );
+    assert.equal(alerts.some((alert) => alert.kind === "contraindicated" && alert.sourceName === "MFDS DUR"), true);
+  });
+
+  it("adds an orange same-drug-class warning from DUR and skips it when the pair is already contraindicated", () => {
+    const classPair = {
+      a: "ibuprofen",
+      b: "aspirin",
+      reasonEn: "MFDS DUR lists these in the same drug class (NSAIDs).",
+      reasonKo: "식약처 DUR 효능군 중복입니다. (해열진통소염제)",
+    };
+    const added = checkSafety(sampleResult().medicines, { contraindicated: [], sameClass: [classPair] });
+    const match = added.find((alert) => alert.kind === "class");
+    assert.equal(match?.severity, "warning");
+    assert.equal(match?.sourceName, "MFDS DUR");
+    assert.equal(match?.ingredient, "aspirin+ibuprofen");
+    assert.equal(added.some((alert) => alert.kind === "caution"), true);
+
+    const blocked = checkSafety(sampleResult().medicines, {
+      contraindicated: [
+        { a: "ibuprofen", b: "aspirin", reasonEn: "Listed by MFDS DUR.", reasonKo: "식약처 DUR 병용금기입니다." },
+      ],
+      sameClass: [classPair],
+    });
+    assert.equal(blocked.some((alert) => alert.kind === "class"), false);
+    assert.equal(blocked.some((alert) => alert.kind === "contraindicated"), true);
+  });
+
+  it("matches DUR ingredient spellings that differ by case or salt", () => {
+    assert.equal(canonicalIngredient("Ibuprofen"), "ibuprofen");
+    assert.equal(canonicalIngredient("Cetirizine Hydrochloride"), "cetirizine");
+    assert.equal(canonicalIngredient("Warfarin Sodium"), "warfarin");
+    assert.equal(canonicalIngredient("Acetylsalicylic Acid"), "aspirin");
+    assert.deepEqual(ingredientSearchNames("aspirin"), ["Aspirin", "Acetylsalicylic Acid", "Acetylsalicylic"]);
+
+    const found = collectDurFindings(
+      [
+        {
+          INGR_ENG_NAME: "Warfarin Sodium",
+          MIXTURE_INGR_ENG_NAME: "Aspirin",
+          PROHBT_CONTENT: "출혈 위험",
+        },
+      ],
+      [
+        { INGR_ENG_NAME: "Ibuprofen", EFFECT_NAME: "해열·진통·소염제" },
+        { INGR_NAME: "아스피린", EFFECT_NAME: "해열 진통 소염제" },
+      ],
+      ["warfarin", "aspirin", "ibuprofen"],
+    );
+    assert.equal(found.contraindicated.length, 1);
+    assert.equal(found.contraindicated[0]?.reasonKo, "출혈 위험");
+    assert.equal(found.sameClass.length, 1);
+    assert.equal(found.sameClass[0]?.a === "aspirin" || found.sameClass[0]?.b === "aspirin", true);
+  });
+
+  it("treats the DUR series name as the drug class and ignores deleted rows", () => {
+    const found = collectDurFindings(
+      [],
+      [
+        {
+          INGR_ENG_NAME: "Ibuprofen",
+          SERS_NAME: "비스테로이드성 소염제",
+          CLASS_NAME: "[01140]해열.진통.소염제",
+          DEL_YN: "정상",
+        },
+        {
+          INGR_ENG_NAME: "Aspirin",
+          SERS_NAME: "비스테로이드성 소염제",
+          CLASS_NAME: "[01140]해열.진통.소염제",
+          DEL_YN: "정상",
+        },
+        {
+          INGR_ENG_NAME: "Acetaminophen",
+          SERS_NAME: "아닐리드계 해열진통제",
+          CLASS_NAME: "[01140]해열.진통.소염제",
+          DEL_YN: "정상",
+        },
+        { INGR_ENG_NAME: "Pseudoephedrine", SERS_NAME: "진해거담제", DEL_YN: "삭제" },
+      ],
+      ["ibuprofen", "aspirin", "acetaminophen", "pseudoephedrine"],
+    );
+    assert.deepEqual(
+      found.sameClass.map((pair) => [pair.a, pair.b].sort().join("+")),
+      ["aspirin+ibuprofen"],
     );
   });
 });
