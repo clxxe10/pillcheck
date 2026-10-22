@@ -181,8 +181,8 @@ export function LandingScreen() {
             </div>
             <p className="max-w-[520px] text-[17px] leading-[1.45] text-pretty text-[rgba(60,60,67,0.75)] lg:text-[19px]">{t("landing.heroBody")}</p>
             <div className="flex flex-col gap-3 lg:gap-4">
-              <div className="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-6">
-                <Link href="/scan?fresh=1" className="px-7 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] lg:w-auto" style={checkLink}>
+              <div className="flex flex-col items-stretch gap-1 md:items-center lg:flex-row lg:items-center lg:justify-start lg:gap-6">
+                <Link href="/scan?fresh=1" className="w-full px-7 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] md:w-fit md:max-w-full" style={checkLink}>
                   {t("landing.check")}
                 </Link>
                 <Link href="/scan?sample=1" className="flex items-center justify-center gap-1.5 px-2.5 py-2.5 text-[17px] font-semibold">
@@ -193,8 +193,8 @@ export function LandingScreen() {
             </div>
           </div>
         </Reveal>
-        <div className="relative mt-7 h-[378px] overflow-hidden lg:mt-0 lg:h-[540px]">
-          <div className="origin-top-left scale-[0.7] lg:scale-100">
+        <div className="relative mx-auto mt-7 h-[378px] w-[350px] max-w-full overflow-hidden md:h-[540px] md:w-[500px] lg:mx-0 lg:mt-0">
+          <div className="origin-top-left scale-[0.7] md:scale-100">
             <HeroStage />
           </div>
         </div>
@@ -382,7 +382,7 @@ export function LandingScreen() {
             </div>
           </div>
         </Reveal>
-        <Link href="/scan?sample=1" className="px-7 py-4" style={checkLink}>{t("landing.tryPhotos")}</Link>
+        <Link href="/scan?sample=1" className="w-full px-7 py-4 md:w-fit md:max-w-full" style={checkLink}>{t("landing.tryPhotos")}</Link>
       </section>
 
       <section className="flex flex-col items-center gap-6 px-5 py-[72px] lg:gap-12 lg:px-20 lg:py-24">
@@ -435,7 +435,7 @@ export function LandingScreen() {
             <div className="absolute inset-0 rounded-full opacity-35 mix-blend-multiply" style={{ backgroundImage: "url(/brand/grain.svg)", WebkitMaskImage: "radial-gradient(circle,#000 55%,transparent 72%)", maskImage: "radial-gradient(circle,#000 55%,transparent 72%)" }} />
           </div>
           <h2 className="relative max-w-[760px] text-center text-[36px] leading-[1.08] font-bold tracking-[-0.03em] lg:text-[60px] lg:leading-[1.05] lg:tracking-[-0.035em]">{t("landing.cta")}</h2>
-          <Link href="/scan?fresh=1" className="relative px-7 py-4" style={checkLink}>{t("landing.check")}</Link>
+          <Link href="/scan?fresh=1" className="relative w-full px-7 py-4 md:w-fit md:max-w-full" style={checkLink}>{t("landing.check")}</Link>
         </div>
       </section>
 
