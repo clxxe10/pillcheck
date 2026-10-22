@@ -5,8 +5,14 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 function ScanGate() {
-  const error = useSearchParams().get("error") === "1";
-  return <ScanScreen initialError={error} />;
+  const params = useSearchParams();
+  return (
+    <ScanScreen
+      initialError={params.get("error") === "1"}
+      initialSample={params.get("sample") === "1"}
+      initialFresh={params.get("fresh") === "1"}
+    />
+  );
 }
 
 export default function Page() {

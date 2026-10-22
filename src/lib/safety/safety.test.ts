@@ -10,6 +10,7 @@ function medicine(partial: Pick<Medicine, "id" | "ingredient" | "dose" | "timesP
     nameEn: partial.id,
     days: null,
     timeSlots: [],
+    timeSlotsEstimated: false,
     sourceImageIndex: 0,
     sourceType: "prescription_bag",
     confidence: "high",

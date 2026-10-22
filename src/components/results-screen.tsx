@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  BlackBadge,
-  Disclaimer,
-  LangToggle,
-  LogoMark,
-  MobileDock,
-  PageFrame,
-  SeverityBadge,
-  SoftChip,
-} from "@/components/chrome";
+import { BlackBadge, Disclaimer, PageFrame, SeverityBadge, SoftChip } from "@/components/chrome";
 import { ChevronIcon, PencilIcon, PinIcon } from "@/components/icons";
 import { EditSheet } from "@/components/edit-sheet";
 import { LimeRule, SummaryOrb } from "@/components/orb";
@@ -31,10 +22,12 @@ import {
   warningCopy,
 } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
+import { resetScan } from "@/lib/scan-store";
 import { useSession } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
 import type { DoseSlot, Medicine, SafetyAlert } from "@/types";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const sourceStyle = { fontWeight: 400, fontSize: 13, lineHeight: 1.3, color: "#6B6B72", textDecoration: "none" };
 
@@ -44,10 +37,18 @@ const desktopOrb = { top: -90, right: -70, width: 420, height: 300 };
 export function ResultsScreen() {
   const { t, lang } = useTranslation();
   const now = useNow();
-  const { medicines, alerts, photoCount, updateMedicine, deleteMedicine } = useSession();
+  const router = useRouter();
+  const { medicines, alerts, photoCount, hasResults, updateMedicine, deleteMedicine, clearSession } = useSession();
+  const [ready, setReady] = useState(false);
   const [slot, setSlot] = useState<DoseSlot | "all">("all");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    setReady(true);
+  }, []);
+  useEffect(() => {
+    if (ready && !hasResults) router.replace("/scan?fresh=1");
+  }, [ready, hasResults, router]);
   const editing = medicines.find((item) => item.id === editingId) ?? null;
   const reviewCount = medicines.filter((item) => item.confidence === "low").length;
   const clinics = new Set(medicines.map((item) => item.clinic)).size;
@@ -83,38 +84,16 @@ export function ResultsScreen() {
     }
   }
 
+  function startOver() {
+    clearSession();
+    resetScan();
+    router.push("/scan?fresh=1");
+  }
+
+  if (!ready || !hasResults) return <PageFrame>{null}</PageFrame>;
+
   return (
     <PageFrame
-      active="list"
-      showLogo={false}
-      header={
-        <>
-          <div className="flex items-center justify-between lg:hidden">
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <LogoMark width={38} height={22} bar={13} />
-              <h1 style={{ margin: 0, fontWeight: 600, fontSize: 34, letterSpacing: "-0.02em" }}>
-                {t("results.title")}
-              </h1>
-            </div>
-            <LangToggle />
-          </div>
-          <div className="hidden items-center justify-between lg:flex">
-            <div style={{ display: "flex", alignItems: "baseline", gap: 14 }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 12, alignSelf: "center" }}>
-                <LogoMark width={44} height={26} bar={17} />
-                <h1 style={{ margin: 0, fontWeight: 600, fontSize: 40, letterSpacing: "-0.025em" }}>
-                  {t("results.title")}
-                </h1>
-              </span>
-              <span style={{ fontWeight: 400, fontSize: 17, color: "#6B6B72" }}>
-                {resultsMeta(photoCount, now ? formatToday(lang, "short", new Date(now)) : "", lang)}
-              </span>
-            </div>
-            <LangToggle wide solid />
-          </div>
-        </>
-      }
-      mobileBar={<MobileDock active="list" />}
       overlay={
         <>
         {copied ? (
@@ -149,7 +128,39 @@ export function ResultsScreen() {
         </>
       }
     >
-      <div className="flex flex-1 flex-col pt-4 lg:pt-6">
+      <div className="flex flex-1 flex-col gap-5 pb-28 lg:gap-7 lg:pb-0">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex flex-col gap-1.5">
+            <h1 className="text-[32px] font-bold tracking-[-0.03em] lg:text-[40px]">{t("results.title")}</h1>
+            <div className="flex items-center gap-1.5 text-[13px] text-[rgba(60,60,67,0.7)] lg:text-[14px]">
+              <img src="/brand/clock-gray.svg" alt="" width={15} height={15} />
+              {t("results.ephemeral")}
+            </div>
+            <div className="text-[15px] text-[#6B6B72]">
+              {resultsMeta(photoCount, now ? formatToday(lang, "short", new Date(now)) : "", lang)}
+            </div>
+          </div>
+          <div className="no-print hidden items-center gap-2 lg:flex">
+            <ActionButton icon="download-white" label={t("results.savePdf")} primary onClick={() => window.print()} />
+            <ActionButton icon="printer" label={t("results.print")} onClick={() => window.print()} />
+            <ActionButton icon="share" label={t("results.share")} onClick={share} />
+            <ActionButton icon="restart-gray" label={t("results.startOver")} quiet onClick={startOver} />
+          </div>
+        </div>
+        <div
+          className="no-print fixed inset-x-3 bottom-4 z-30 grid grid-cols-4 gap-1 rounded-[28px] p-2 lg:hidden"
+          style={{
+            background: "rgba(255,255,255,0.72)",
+            backdropFilter: "blur(24px) saturate(180%)",
+            WebkitBackdropFilter: "blur(24px) saturate(180%)",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12), inset 0 0.5px 0 rgba(255,255,255,0.6)",
+          }}
+        >
+          <DockButton icon="download-white" label={t("results.savePdfShort")} primary onClick={() => window.print()} />
+          <DockButton icon="printer" label={t("results.print")} onClick={() => window.print()} />
+          <DockButton icon="share" label={t("results.shareShort")} onClick={share} />
+          <DockButton icon="restart-gray" label={t("results.startOver")} onClick={startOver} />
+        </div>
         <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:items-start lg:gap-x-4">
           <div id="alerts" className="lg:col-start-1 lg:row-start-1">
             <AlertSummary
@@ -234,7 +245,7 @@ function AlertSummary({
         <button
           type="button"
           onClick={onShare}
-          className="h-14 lg:h-[60px]"
+          className="no-print h-14 lg:h-[60px]"
           style={{
             width: "100%",
             background: "transparent",
@@ -344,6 +355,9 @@ function MedicineCard({ medicine, onEdit }: { medicine: Medicine; onEdit: () => 
         <div className="flex flex-col gap-1 lg:flex-1">
           <span style={{ fontWeight: 400, fontSize: 15, lineHeight: 1.35, color: "#4A4A50" }}>{medicine.ingredient}</span>
           <span style={{ fontWeight: 500, fontSize: 15, lineHeight: 1.35 }}>{doseLine(medicine, lang)}</span>
+          {medicine.timeSlotsEstimated ? (
+            <span style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3, color: "#6B6B72" }}>{t("results.estimated")}</span>
+          ) : null}
           <div className="mt-1.5 flex items-center justify-between gap-2 lg:mt-0 lg:block">
             <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 400, fontSize: 14, color: "#6B6B72" }}>
               <PinIcon size={15} />
@@ -353,7 +367,7 @@ function MedicineCard({ medicine, onEdit }: { medicine: Medicine; onEdit: () => 
               type="button"
               aria-label={t("editLabel")}
               onClick={onEdit}
-              className="flex lg:hidden"
+              className="no-print flex lg:hidden"
               style={editButton}
             >
               <PencilIcon size={18} />
@@ -364,7 +378,7 @@ function MedicineCard({ medicine, onEdit }: { medicine: Medicine; onEdit: () => 
           type="button"
           aria-label={t("editLabel")}
           onClick={onEdit}
-          className="hidden lg:flex"
+          className="no-print hidden lg:flex"
           style={{ ...editButton, alignSelf: "flex-end" }}
         >
           <PencilIcon size={18} />
@@ -385,6 +399,62 @@ const editButton = {
   alignItems: "center" as const,
   justifyContent: "center" as const,
 };
+
+function ActionButton({
+  icon,
+  label,
+  onClick,
+  primary = false,
+  quiet = false,
+}: {
+  icon: string;
+  label: string;
+  onClick: () => void;
+  primary?: boolean;
+  quiet?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-2 rounded-full px-[18px] py-[11px] text-[15px] font-semibold whitespace-nowrap"
+      style={
+        primary
+          ? { background: "#000", color: "#fff", border: "1.5px solid #D4FF4F" }
+          : quiet
+            ? { background: "transparent", color: "rgba(60,60,67,0.75)" }
+            : { background: "#fff", color: "#000", boxShadow: "inset 0 0 0 0.5px rgba(60,60,67,0.25)" }
+      }
+    >
+      <img src={`/brand/${icon}.svg`} alt="" width={17} height={17} />
+      {label}
+    </button>
+  );
+}
+
+function DockButton({
+  icon,
+  label,
+  onClick,
+  primary = false,
+}: {
+  icon: string;
+  label: string;
+  onClick: () => void;
+  primary?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-center gap-1 rounded-[20px] px-0.5 py-2 text-[11px] font-semibold"
+      style={primary ? { background: "#000", color: "#fff", border: "1.5px solid #D4FF4F" } : { color: "#000" }}
+    >
+      <img src={`/brand/${icon}.svg`} alt="" width={20} height={20} />
+      {label}
+    </button>
+  );
+}
 
 function Schedule({
   medicines,

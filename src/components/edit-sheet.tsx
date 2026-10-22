@@ -70,6 +70,7 @@ export function EditSheet({
       timesPerDay: times,
       days,
       timeSlots: slotOrder.filter((slot) => slots.includes(slot)),
+      timeSlotsEstimated: false,
       confidence: "high",
     });
     onClose();

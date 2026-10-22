@@ -86,6 +86,7 @@ export function normalizeExtraction(raw: unknown, clinics: string[]): ExtractRes
     const timesGiven = times !== null && times > 0 && times <= 12;
     let timesPerDay: number | null;
     let timeSlots: DoseSlot[] | null;
+    let timeSlotsEstimated = item.timeSlotsEstimated === true;
     let scheduleMissing = false;
     if (!timesGiven && printedSlots.length === 0) {
       timesPerDay = null;
@@ -94,6 +95,7 @@ export function normalizeExtraction(raw: unknown, clinics: string[]): ExtractRes
     } else if (timesGiven && printedSlots.length === 0) {
       timesPerDay = times;
       timeSlots = DEFAULT_SLOTS[Math.min(times, 4)] ?? ["morning"];
+      timeSlotsEstimated = true;
     } else if (!timesGiven) {
       timeSlots = printedSlots;
       timesPerDay = printedSlots.length;
@@ -106,7 +108,7 @@ export function normalizeExtraction(raw: unknown, clinics: string[]): ExtractRes
     let confidence = CONFIDENCE.includes(item.confidence as Confidence)
       ? (item.confidence as Confidence)
       : "low";
-    if (scheduleMissing) confidence = "low";
+    if (scheduleMissing || timeSlotsEstimated) confidence = "low";
 
     medicines.push({
       id: `med-${medicines.length + 1}`,
@@ -117,6 +119,7 @@ export function normalizeExtraction(raw: unknown, clinics: string[]): ExtractRes
       timesPerDay,
       days: days && days > 0 ? Math.min(days, 365) : null,
       timeSlots,
+      timeSlotsEstimated,
       sourceImageIndex,
       sourceType,
       confidence,

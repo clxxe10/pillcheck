@@ -36,6 +36,7 @@ function readMedicines(body: unknown): Medicine[] | string {
       timesPerDay: times > 0 ? Math.min(times, 24) : null,
       days: days > 0 ? Math.min(days, 365) : null,
       timeSlots: null,
+      timeSlotsEstimated: item.timeSlotsEstimated === true,
       sourceImageIndex: Math.max(0, numberOr(item.sourceImageIndex, 0)),
       sourceType: SOURCE_TYPES.includes(item.sourceType as SourceType)
         ? (item.sourceType as SourceType)

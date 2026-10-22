@@ -37,11 +37,14 @@ const SOURCE_TYPES: SourceType[] = ["prescription_bag", "prescription", "otc_box
 function storedMedicine(item: Medicine): Medicine {
   const sourceType = SOURCE_TYPES.includes(item.sourceType) ? item.sourceType : "prescription_bag";
   const timesPerDay = typeof item.timesPerDay === "number" && item.timesPerDay > 0 ? item.timesPerDay : null;
+  const timeSlotsEstimated = item.timeSlotsEstimated === true;
   return {
     ...item,
     sourceType,
     timesPerDay,
     timeSlots: Array.isArray(item.timeSlots) ? item.timeSlots : null,
+    timeSlotsEstimated,
+    confidence: timeSlotsEstimated ? "low" : item.confidence,
   };
 }
 
@@ -121,6 +124,13 @@ export function updateMedicine(medicine: Medicine) {
   publishMedicines(state.medicines.map((item) => (item.id === medicine.id ? medicine : item)));
 }
 
+export function clearSession() {
+  safetyToken += 1;
+  state = { hasResults: false, source: "demo", photos: [], medicines: [], alerts: [] };
+  window.sessionStorage.removeItem(STORAGE_KEY);
+  listeners.forEach((listener) => listener());
+}
+
 export function deleteMedicine(id: string) {
   const medicines = state.medicines.filter((item) => item.id !== id);
   publishMedicines(medicines, { hasResults: medicines.length > 0 && state.hasResults });
@@ -134,5 +144,6 @@ export function useSession() {
     completeAnalysis,
     updateMedicine,
     deleteMedicine,
+    clearSession,
   };
 }

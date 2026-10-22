@@ -33,10 +33,10 @@ const DEMO_DELAY_MS = 3200;
 const directVisit: PendingAnalysis = { photos: samplePhotos, demo: true };
 
 const initialState: ScanState = {
-  photos: samplePhotos,
+  photos: [],
   notice: null,
   pending: null,
-  analyzed: samplePhotos,
+  analyzed: [],
 };
 
 let state = initialState;
@@ -72,6 +72,16 @@ function photoFromFile(file: File): ScanPhoto {
     file,
     previewUrl: URL.createObjectURL(file),
   };
+}
+
+/** Drops in-memory photos so a new check starts empty. */
+export function resetScan() {
+  const blobs = [...state.photos, ...state.analyzed];
+  running = null;
+  set({ photos: [], notice: null, pending: null, analyzed: [] });
+  for (const photo of blobs) {
+    if (photo.previewUrl?.startsWith("blob:")) URL.revokeObjectURL(photo.previewUrl);
+  }
 }
 
 /** Loads the saved sample bags. Analyzing them uses the stored result and does not call the API. */

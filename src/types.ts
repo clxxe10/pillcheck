@@ -28,6 +28,8 @@ export type Medicine = {
   days: number | null;
   /** null when the label does not say when to take it. */
   timeSlots: DoseSlot[] | null;
+  /** True when the time of day was not printed and the slots were inferred from a daily count. */
+  timeSlotsEstimated: boolean;
   /** 0-based index into the photos sent with the request. */
   sourceImageIndex: number;
   /** Package the medicine was read from. */

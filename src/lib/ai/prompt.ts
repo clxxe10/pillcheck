@@ -27,6 +27,7 @@ export const extractSchema: Record<string, unknown> = {
           "timesPerDay",
           "days",
           "timeSlots",
+          "timeSlotsEstimated",
           "sourceImageIndex",
           "sourceType",
           "confidence",
@@ -39,6 +40,7 @@ export const extractSchema: Record<string, unknown> = {
           timesPerDay: { type: "integer" },
           days: { type: "integer" },
           timeSlots: { type: "array", items: { type: "string", enum: [...SLOTS] } },
+          timeSlotsEstimated: { type: "boolean" },
           sourceImageIndex: { type: "integer" },
           sourceType: { type: "string", enum: [...SOURCE_TYPES] },
           confidence: { type: "string", enum: [...CONFIDENCE] },
@@ -98,10 +100,11 @@ For each medicine return:
 - dose: amount per dose exactly as printed, with its unit (e.g. "1정"). Use "" when the package does not say how much to take at one time.
 - timesPerDay: times per day as an integer. Use 0 when it is not printed.
 - days: number of days as an integer. Use 0 when it is not printed or the medicine is ongoing.
-- timeSlots: from a 용법 grid or text, using "morning" (아침), "lunch" (점심), "evening" (저녁), "bedtime" (취침전/자기 전). If only a count is printed: 1회 → ["morning"], 2회 → ["morning","evening"], 3회 → ["morning","lunch","evening"], 4회 → all four. If 취침전 is printed, include "bedtime". Use [] when no count and no time of day are printed.
+- timeSlots: from a 용법 grid or text, using "morning" (아침), "lunch" (점심), "evening" (저녁), "bedtime" (취침전/자기 전). If only a count is printed and no time of day: 1회 → ["morning"], 2회 → ["morning","evening"], 3회 → ["morning","lunch","evening"], 4회 → all four. If 취침전 is printed, include "bedtime". Use [] when no count and no time of day are printed.
+- timeSlotsEstimated: true only when the label does not print a time of day and you filled timeSlots from the daily count. false when the times of day are printed, or when timeSlots is [].
 - sourceImageIndex: index of the image the medicine was read from.
 - sourceType: the class of that image.
-- confidence: "high" if the name, ingredient, strength, and a printed schedule are clearly legible; "medium" if you inferred something (for example the ingredient from a well-known product name, or time slots from a count); "low" when times per day, days, and time of day are not printed, or any field is partly unreadable. Low confidence is shown as "Needs review". A prescription that is ongoing (days 0) but has a printed daily schedule can still be "high" or "medium".
+- confidence: "high" if the name, ingredient, strength, and a printed schedule (including the time of day) are clearly legible; "medium" if you inferred something other than the time of day (for example the ingredient from a well-known product name); "low" when timeSlotsEstimated is true, when times per day and time of day are not printed, or any field is partly unreadable. Low confidence is shown as "Needs review". A prescription that is ongoing (days 0) but has a printed daily schedule, including the time of day, can still be "high" or "medium".
 
 Rules:
 - One entry per medicine per image. If the same medicine appears in two photos, list it twice with each sourceImageIndex — duplicates across clinics matter.

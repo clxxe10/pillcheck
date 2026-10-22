@@ -29,7 +29,8 @@ describe("normalizeExtraction", () => {
     assert.equal(medicine.timesPerDay, 3);
     assert.equal(medicine.days, null);
     assert.deepEqual(medicine.timeSlots, ["morning", "lunch", "evening"]);
-    assert.equal(medicine.confidence, "medium");
+    assert.equal(medicine.timeSlotsEstimated, true);
+    assert.equal(medicine.confidence, "low");
   });
 
   it("marks a bottle with no directions as needing review", () => {
@@ -57,6 +58,7 @@ describe("normalizeExtraction", () => {
     assert.equal(medicine.timesPerDay, null);
     assert.equal(medicine.days, null);
     assert.equal(medicine.timeSlots, null);
+    assert.equal(medicine.timeSlotsEstimated, false);
     assert.equal(medicine.confidence, "low");
   });
 

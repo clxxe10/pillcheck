@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  BackButton,
-  Disclaimer,
-  LangToggle,
-  PageFrame,
-  TitleBlock,
-} from "@/components/chrome";
+import { Disclaimer, PageFrame, TitleBlock } from "@/components/chrome";
 import {
   CameraIcon,
   ChevronIcon,
@@ -25,6 +19,7 @@ import {
   addFiles,
   loadSamplePhotos,
   removePhoto,
+  resetScan,
   replacePhoto,
   setClinic,
   showSampleError,
@@ -38,7 +33,15 @@ import { useEffect, useRef, useState } from "react";
 
 const mono = 'ui-monospace, "SF Mono", Menlo, monospace';
 
-export function ScanScreen({ initialError = false }: { initialError?: boolean }) {
+export function ScanScreen({
+  initialError = false,
+  initialSample = false,
+  initialFresh = false,
+}: {
+  initialError?: boolean;
+  initialSample?: boolean;
+  initialFresh?: boolean;
+}) {
   const { t, lang } = useTranslation();
   const router = useRouter();
   const { photos, notice } = useScan();
@@ -48,8 +51,17 @@ export function ScanScreen({ initialError = false }: { initialError?: boolean })
   const [editingId, setEditingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialError) showSampleError();
-  }, [initialError]);
+    if (initialError) {
+      loadSamplePhotos();
+      showSampleError();
+      return;
+    }
+    if (initialSample) {
+      loadSamplePhotos();
+      return;
+    }
+    if (initialFresh) resetScan();
+  }, [initialError, initialSample, initialFresh]);
 
   const readable = photos.filter((photo) => !photo.unreadable).length;
   const errorPhotos = photos.filter((photo) => photo.unreadable);
@@ -74,36 +86,7 @@ export function ScanScreen({ initialError = false }: { initialError?: boolean })
   }
 
   return (
-    <PageFrame
-      active={null}
-      header={
-        <>
-          <div className="flex items-center justify-between lg:hidden">
-            <BackButton />
-            <LangToggle />
-          </div>
-          <div className="hidden items-start justify-between gap-6 lg:flex">
-            <TitleBlock line1={t("scanScreen.line1")} line2={t("scanScreen.line2")} />
-            <LangToggle wide />
-          </div>
-        </>
-      }
-      mobileBar={
-        <div
-          className="lg:hidden"
-          style={{
-            position: "sticky",
-            bottom: 0,
-            marginTop: "auto",
-            padding: "20px 16px 30px",
-            background: "linear-gradient(rgba(242,242,244,0), #F2F2F4 35%)",
-            zIndex: 20,
-          }}
-        >
-          <AnalyzeButton label={analyzeLabel(readable, lang)} disabled={readable === 0} onClick={analyze} />
-        </div>
-      }
-    >
+    <PageFrame>
       <input
         ref={libraryRef}
         type="file"
@@ -129,10 +112,8 @@ export function ScanScreen({ initialError = false }: { initialError?: boolean })
         }}
       />
 
-      <div className="flex flex-1 flex-col pt-[22px] lg:pt-0">
-        <div className="lg:hidden">
-          <TitleBlock line1={t("scanScreen.line1")} line2={t("scanScreen.line2")} />
-        </div>
+      <div className="flex flex-1 flex-col">
+        <TitleBlock line1={t("scanScreen.line1")} line2={t("scanScreen.line2")} />
 
         <div className="mt-6 lg:mt-7 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
           <Dropzone
@@ -181,13 +162,17 @@ export function ScanScreen({ initialError = false }: { initialError?: boolean })
               </div>
 
               <div className="lg:py-[18px]">
-                <PhotoGrid
-                  photos={photos}
-                  editingId={editingId}
-                  onEdit={setEditingId}
-                  onClinic={setClinic}
-                  onRemove={remove}
-                />
+                {photos.length === 0 ? (
+                  <EmptyArt />
+                ) : (
+                  <PhotoGrid
+                    photos={photos}
+                    editingId={editingId}
+                    onEdit={setEditingId}
+                    onClinic={setClinic}
+                    onRemove={remove}
+                  />
+                )}
               </div>
 
               <div className="mt-[18px] lg:mt-0 lg:border-t lg:border-[#EDEDF0] lg:py-3.5">
@@ -203,6 +188,12 @@ export function ScanScreen({ initialError = false }: { initialError?: boolean })
 
         <div className="hidden h-8 lg:block" />
         <Disclaimer className="lg:mx-0 lg:mt-auto" />
+        <div
+          className="sticky bottom-0 z-20 -mx-4 mt-4 px-4 pt-5 pb-7 lg:hidden"
+          style={{ background: "linear-gradient(rgba(245,245,247,0), #F5F5F7 35%)" }}
+        >
+          <AnalyzeButton label={analyzeLabel(readable, lang)} disabled={readable === 0} onClick={analyze} />
+        </div>
       </div>
     </PageFrame>
   );
@@ -297,6 +288,28 @@ function Dropzone({
       >
         {t("scanScreen.trySamples")}
       </button>
+    </div>
+  );
+}
+
+function EmptyArt() {
+  const { t } = useTranslation();
+  return (
+    <div className="relative flex h-[280px] flex-col items-center justify-center gap-4 overflow-hidden rounded-[28px] bg-white lg:h-[320px]">
+      <div
+        className="absolute top-6 left-1/2 h-40 w-40 -translate-x-1/2 rounded-full opacity-75 lg:h-[200px] lg:w-[200px]"
+        style={{ background: "radial-gradient(circle at 40% 38%,#D4FF4F 0%,#B6FA7A 38%,#7DF0C6 72%,rgba(125,240,198,0) 100%)" }}
+      />
+      <div className="relative h-[140px] w-[220px] lg:h-[170px] lg:w-[260px]">
+        <img src="/brand/illo-bag.svg" alt="" className="absolute top-1 left-2 w-[84px] -rotate-[8deg] lg:w-24" />
+        <img src="/brand/illo-bottle.svg" alt="" className="absolute top-2 left-[148px] w-[58px] rotate-[9deg] lg:left-[170px] lg:w-[70px]" />
+        <img src="/brand/illo-box.svg" alt="" className="absolute top-12 left-14 w-[100px] -rotate-[4deg] lg:top-16 lg:w-[124px]" />
+        <img src="/brand/illo-capsule.svg" alt="" className="absolute top-[108px] left-[176px] w-8 -rotate-[20deg] lg:top-[132px] lg:left-[210px] lg:w-[38px]" />
+      </div>
+      <div className="relative px-6 text-center">
+        <div className="text-[19px] font-semibold">{t("landing.emptyTitle")}</div>
+        <div className="text-[14px] text-[rgba(60,60,67,0.7)]">{t("landing.emptyBody")}</div>
+      </div>
     </div>
   );
 }

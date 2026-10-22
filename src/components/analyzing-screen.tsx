@@ -1,6 +1,6 @@
 "use client";
 
-import { Disclaimer, LangToggle, LogoMark, PageFrame } from "@/components/chrome";
+import { Disclaimer, PageFrame } from "@/components/chrome";
 import { CheckIcon, LockIcon } from "@/components/icons";
 import { PulseOrb, Spinner } from "@/components/orb";
 import { foundLabel, readProgressLabel } from "@/lib/format";
@@ -79,23 +79,7 @@ export function AnalyzingScreen({ hold = false }: { hold?: boolean }) {
   );
 
   return (
-    <PageFrame
-      active={null}
-      header={
-        <>
-          <div className="flex items-center justify-between lg:hidden">
-            <span style={{ display: "flex", alignItems: "center", gap: 10, fontWeight: 600, fontSize: 18, letterSpacing: "-0.01em" }}>
-              <LogoMark width={38} height={22} bar={13} />
-              PillCheck
-            </span>
-            <LangToggle />
-          </div>
-          <div className="hidden justify-end lg:flex">
-            <LangToggle wide />
-          </div>
-        </>
-      }
-    >
+    <PageFrame>
       <div className="flex flex-1 flex-col">
         <div className="flex flex-col lg:mx-auto lg:w-full lg:max-w-[560px]">
           <div className="flex h-[300px] items-center justify-center lg:h-[320px]">

@@ -10,8 +10,8 @@ import {
 import { cn } from "@/lib/cn";
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import type { CSSProperties, ReactNode } from "react";
+import { useEffect, useState } from "react";
 
 export type NavKey = "home" | "list" | null;
 
@@ -256,33 +256,78 @@ export function MobileDock({ active }: { active: NavKey }) {
   );
 }
 
-export function PageFrame({
-  active,
-  showLogo = true,
-  header,
-  children,
-  mobileBar,
-  overlay,
-}: {
-  active: NavKey;
-  showLogo?: boolean;
-  header?: ReactNode;
-  children: ReactNode;
-  mobileBar?: ReactNode;
-  overlay?: ReactNode;
-}) {
-  const pathname = usePathname();
+function useScrolled(px = 8) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const update = () => setOn(window.scrollY > px);
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    return () => window.removeEventListener("scroll", update);
+  }, [px]);
+  return on;
+}
+
+export function SiteHeader() {
+  const { t, lang, setLang } = useTranslation();
+  const glass = useScrolled(8);
+  const langStyle = (code: "en" | "ko"): CSSProperties => ({
+    borderRadius: 999,
+    background: lang === code ? "#fff" : "transparent",
+    boxShadow: lang === code ? "0 1px 3px rgba(0,0,0,0.12)" : "none",
+    color: lang === code ? "#000" : "rgba(60,60,67,0.6)",
+    fontWeight: lang === code ? 600 : 500,
+  });
   return (
-    <div
-      className="relative min-h-dvh overflow-x-clip bg-[#F2F2F4] text-[#111] lg:mx-auto lg:grid lg:max-w-[1280px] lg:grid-cols-[96px_minmax(0,1fr)]"
-      data-path={pathname}
-    >
-      <DesktopNav active={active} showLogo={showLogo} />
-      <div className="flex min-h-dvh min-w-0 flex-col lg:px-9 lg:pt-7 lg:pb-8">
-        {header ? <div className="px-4 pt-3 lg:px-0 lg:pt-0">{header}</div> : null}
-        <div className="flex min-w-0 flex-1 flex-col px-4 lg:px-0">{children}</div>
-        {mobileBar}
+    <header className="no-print fixed inset-x-0 top-0 z-40 h-[60px] lg:h-[72px]">
+      {glass ? (
+        <div
+          className="absolute inset-0 border-b border-[rgba(60,60,67,0.2)] bg-[rgba(255,255,255,0.72)] backdrop-blur-[24px]"
+          style={{ backdropFilter: "blur(24px) saturate(180%)", WebkitBackdropFilter: "blur(24px) saturate(180%)" }}
+        />
+      ) : null}
+      <div className="relative flex h-full items-center justify-between px-4 lg:px-12">
+        <Link href="/" className="flex items-center gap-[7px] lg:gap-2.5">
+          <span
+            aria-hidden
+            className="h-[9px] w-5 border-[1.5px] border-black lg:h-3 lg:w-[26px]"
+            style={{ borderRadius: 999, background: "linear-gradient(90deg,#000 50%,#D4FF4F 50%)", transform: "rotate(-35deg)" }}
+          />
+          <span className="text-[16px] font-bold tracking-[-0.02em] lg:text-[19px]">PillCheck</span>
+        </Link>
+        <div className="flex items-center gap-2 lg:gap-3">
+          <div className="flex rounded-full p-0.5" style={{ background: "rgba(120,120,128,0.12)" }}>
+            <button type="button" className="px-2 py-1 text-[12px] lg:px-3 lg:py-[5px] lg:text-[13px]" style={langStyle("en")} onClick={() => setLang("en")}>
+              EN
+            </button>
+            <button type="button" className="px-2 py-1 text-[12px] lg:px-3 lg:py-[5px] lg:text-[13px]" style={langStyle("ko")} onClick={() => setLang("ko")}>
+              KO
+            </button>
+          </div>
+          <Link
+            href="/scan?fresh=1"
+            className="!text-white rounded-full border-[1.5px] border-[#D4FF4F] bg-black px-3 py-[7px] text-[12px] font-semibold whitespace-nowrap lg:px-4 lg:py-2 lg:text-[14px]"
+          >
+            {t("landing.check")}
+          </Link>
+        </div>
       </div>
+    </header>
+  );
+}
+
+export function PageFrame({
+  children,
+  overlay,
+  flush = false,
+}: {
+  children: ReactNode;
+  overlay?: ReactNode;
+  flush?: boolean;
+}) {
+  return (
+    <div className="relative min-h-dvh overflow-x-clip bg-[#F5F5F7] text-black">
+      <SiteHeader />
+      <div className={flush ? "print:bg-white" : "px-4 pt-[84px] pb-12 lg:px-20 lg:pt-[112px] lg:pb-16 print:bg-white print:p-0"}>{children}</div>
       {overlay}
     </div>
   );
