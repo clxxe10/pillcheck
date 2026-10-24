@@ -18,6 +18,7 @@ export const errorStatus: Record<ExtractErrorCode, number> = {
   invalid_response: 502,
   not_configured: 500,
   provider_error: 502,
+  demo_only: 503,
 };
 
 export function isAbortError(error: unknown) {

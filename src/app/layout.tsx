@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { DemoModeProvider } from "@/components/demo-mode";
 import { TranslationProvider } from "@/lib/i18n";
+import { isDemoOnly } from "@/lib/demo-mode";
 import "./globals.css";
 
 const pretendard = localFont({
@@ -20,7 +22,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${pretendard.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full">
-        <TranslationProvider>{children}</TranslationProvider>
+        <DemoModeProvider demoOnly={isDemoOnly()}>
+          <TranslationProvider>{children}</TranslationProvider>
+        </DemoModeProvider>
       </body>
     </html>
   );

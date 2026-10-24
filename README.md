@@ -64,8 +64,11 @@ Open [http://localhost:3000](http://localhost:3000). `npm test` checks the safet
 | `ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Optional |
 | `DATA_GO_KR_KEY` | — | Optional. [data.go.kr](https://www.data.go.kr/data/15056780/openapi.do) key for DUR |
 | `DAILY_EXTRACT_LIMIT` | `200` | Shared live-extraction cap per UTC day, per server instance |
+| `DEMO_ONLY` | off | `true` pauses live photo reading. Sample photos still work, with no AI call |
 
 Do not prefix any of these with `NEXT_PUBLIC_`.
+
+Set `DEMO_ONLY=true` when you want to keep the site up without an AI bill. `/api/extract` answers `demo_only` immediately and does not call Gemini or Claude. The scan screen hides photo upload and the camera, and both "Check my medicines" buttons open the sample scan. Leave the variable unset, or set it to anything other than `true`, and the app behaves as usual. Change it, then redeploy, so the pages pick up the new value.
 
 Live extraction (`POST /api/extract`) allows 5 photos, about 3.5 MB of base64 each, 10 calls an hour and 30 a day per IP, plus the shared daily cap. Over the limit, the sample bags still work. Counters are in memory, so on Vercel they are per instance and reset on a cold start. `POST /api/safety` rejects oversized bodies. Nothing is written to disk.
 

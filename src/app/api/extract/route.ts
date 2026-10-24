@@ -1,5 +1,6 @@
 import { extractMedicines } from "@/lib/ai";
 import { AiError, errorStatus } from "@/lib/ai/errors";
+import { demoOnlyResponse } from "@/lib/demo-mode";
 import { clientIp, takeExtractSlot } from "@/lib/extract-limit";
 import type { ExtractErrorCode, ExtractErrorResponse, ExtractImage } from "@/types";
 
@@ -51,6 +52,9 @@ function readImages(body: unknown): ExtractImage[] | string {
 }
 
 export async function POST(request: Request) {
+  const paused = demoOnlyResponse();
+  if (paused) return paused;
+
   const declared = Number(request.headers.get("content-length") || 0);
   if (declared > MAX_BODY_CHARS) return fail("bad_request", "The photos are too large. Send fewer or smaller ones.");
 

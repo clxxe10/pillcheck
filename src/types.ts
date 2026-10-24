@@ -101,7 +101,8 @@ export type ExtractErrorCode =
   | "timeout"
   | "invalid_response"
   | "not_configured"
-  | "provider_error";
+  | "provider_error"
+  | "demo_only";
 
 export type ExtractErrorResponse = {
   error: ExtractErrorCode;

@@ -1,6 +1,7 @@
 "use client";
 
 import { PageFrame } from "@/components/chrome";
+import { useDemoOnly } from "@/components/demo-mode";
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
@@ -166,6 +167,7 @@ function Chip({ children, tone }: { children: ReactNode; tone: "amber" | "red" }
 
 export function LandingScreen() {
   const { t } = useTranslation();
+  const scanHref = useDemoOnly() ? "/scan?sample=1" : "/scan?fresh=1";
   return (
     <PageFrame flush>
       <section className="px-5 pt-[88px] lg:grid lg:grid-cols-[minmax(0,1fr)_500px] lg:items-center lg:gap-10 lg:px-20 lg:pt-24 lg:pr-[72px] lg:pb-16">
@@ -182,7 +184,7 @@ export function LandingScreen() {
             <p className="max-w-[520px] text-[17px] leading-[1.45] text-pretty text-[rgba(60,60,67,0.75)] lg:text-[19px]">{t("landing.heroBody")}</p>
             <div className="flex flex-col gap-3 lg:gap-4">
               <div className="flex flex-col items-stretch gap-1 md:items-center lg:flex-row lg:items-center lg:justify-start lg:gap-6">
-                <Link href="/scan?fresh=1" className="w-full px-7 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] md:w-fit md:max-w-full" style={checkLink}>
+                <Link href={scanHref} className="w-full px-7 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.12)] md:w-fit md:max-w-full" style={checkLink}>
                   {t("landing.check")}
                 </Link>
                 <Link href="/scan?sample=1" className="flex items-center justify-center gap-1.5 px-2.5 py-2.5 text-[17px] font-semibold">
@@ -436,7 +438,7 @@ export function LandingScreen() {
             <div className="absolute inset-0 rounded-full opacity-35 mix-blend-multiply" style={{ backgroundImage: "url(/brand/grain.svg)", WebkitMaskImage: "radial-gradient(circle,#000 55%,transparent 72%)", maskImage: "radial-gradient(circle,#000 55%,transparent 72%)" }} />
           </div>
           <h2 className="relative max-w-[760px] text-center text-[36px] leading-[1.08] font-bold tracking-[-0.03em] lg:text-[60px] lg:leading-[1.05] lg:tracking-[-0.035em]">{t("landing.cta")}</h2>
-          <Link href="/scan?fresh=1" className="relative w-full px-7 py-4 md:w-fit md:max-w-full" style={checkLink}>{t("landing.check")}</Link>
+          <Link href={scanHref} className="relative w-full px-7 py-4 md:w-fit md:max-w-full" style={checkLink}>{t("landing.check")}</Link>
         </div>
       </section>
 

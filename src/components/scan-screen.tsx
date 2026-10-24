@@ -1,6 +1,7 @@
 "use client";
 
 import { Disclaimer, PageFrame, TitleBlock } from "@/components/chrome";
+import { useDemoOnly } from "@/components/demo-mode";
 import {
   CameraIcon,
   ChevronIcon,
@@ -43,6 +44,7 @@ export function ScanScreen({
   initialFresh?: boolean;
 }) {
   const { t, lang } = useTranslation();
+  const demoOnly = useDemoOnly();
   const router = useRouter();
   const { photos, notice } = useScan();
   const libraryRef = useRef<HTMLInputElement>(null);
@@ -87,36 +89,41 @@ export function ScanScreen({
 
   return (
     <PageFrame>
-      <input
-        ref={libraryRef}
-        type="file"
-        accept="image/*,.heic,.heif"
-        multiple
-        className="sr-only"
-        onChange={(event) => {
-          addList(event.target.files);
-          event.target.value = "";
-        }}
-      />
-      <input
-        ref={retakeRef}
-        type="file"
-        accept="image/*,.heic,.heif"
-        capture="environment"
-        className="sr-only"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file && retakeId.current) replacePhoto(retakeId.current, file);
-          retakeId.current = null;
-          event.target.value = "";
-        }}
-      />
+      {demoOnly ? null : (
+        <>
+          <input
+            ref={libraryRef}
+            type="file"
+            accept="image/*,.heic,.heif"
+            multiple
+            className="sr-only"
+            onChange={(event) => {
+              addList(event.target.files);
+              event.target.value = "";
+            }}
+          />
+          <input
+            ref={retakeRef}
+            type="file"
+            accept="image/*,.heic,.heif"
+            capture="environment"
+            className="sr-only"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file && retakeId.current) replacePhoto(retakeId.current, file);
+              retakeId.current = null;
+              event.target.value = "";
+            }}
+          />
+        </>
+      )}
 
       <div className="flex flex-1 flex-col">
         <TitleBlock line1={t("scanScreen.line1")} line2={t("scanScreen.line2")} />
 
         <div className="mt-6 lg:mt-7 lg:grid lg:grid-cols-2 lg:items-start lg:gap-4">
           <Dropzone
+            demoOnly={demoOnly}
             onBrowse={() => libraryRef.current?.click()}
             onFiles={addList}
             onSamples={loadSamplePhotos}
@@ -148,6 +155,7 @@ export function ScanScreen({
                   index={photos.indexOf(photo) + 1}
                   onRetake={() => retake(photo.id)}
                   onRemove={() => remove(photo.id)}
+                  allowRetake={!demoOnly}
                 />
               </div>
             ))}
@@ -199,29 +207,57 @@ export function ScanScreen({
   );
 }
 
+const dropzoneBox = {
+  border: "2px dashed #C7C7CC",
+  borderRadius: 24,
+  background: "rgba(255,255,255,.6)",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center",
+} as const;
+
 function Dropzone({
+  demoOnly,
   onBrowse,
   onFiles,
   onSamples,
 }: {
+  demoOnly: boolean;
   onBrowse: () => void;
   onFiles: (files: FileList | null) => void;
   onSamples: () => void;
 }) {
   const { t } = useTranslation();
+  if (demoOnly) {
+    return (
+      <div className="gap-4 px-5 py-[26px] lg:min-h-[460px] lg:gap-5 lg:p-10" style={dropzoneBox}>
+        <p className="max-w-[360px] text-[16px] leading-[1.45] text-pretty text-[#4A4A50] lg:text-[17px]">
+          {t("scanScreen.demoPaused")}
+        </p>
+        <button
+          type="button"
+          onClick={onSamples}
+          className="h-12 px-5 text-[16px] lg:h-[52px] lg:px-6 lg:text-[17px]"
+          style={{
+            borderRadius: 9999,
+            background: "#111",
+            color: "#fff",
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          {t("scanScreen.trySamples")}
+        </button>
+      </div>
+    );
+  }
   return (
     <div
       className="gap-3 px-5 py-[26px] lg:min-h-[460px] lg:gap-3.5 lg:p-10"
-      style={{
-        border: "2px dashed #C7C7CC",
-        borderRadius: 24,
-        background: "rgba(255,255,255,.6)",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        textAlign: "center",
-      }}
+      style={dropzoneBox}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
         event.preventDefault();
@@ -470,6 +506,7 @@ function NoticeCard({
 }) {
   const { t } = useTranslation();
   const limited = notice.kind === "rate_limited" || notice.kind === "quota";
+  const paused = notice.kind === "failed" && notice.code === "demo_only";
   const failKey =
     notice.kind === "rate_limited"
       ? "rateBody"
@@ -483,7 +520,9 @@ function NoticeCard({
             ? "fail_config"
             : notice.code === "bad_request"
               ? "fail_request"
-              : "fail_generic";
+              : notice.code === "demo_only"
+                ? "demoPaused"
+                : "fail_generic";
   return (
     <div className="px-[18px]" style={{ background: "#fff", borderRadius: 24 }}>
       <div
@@ -515,18 +554,20 @@ function NoticeCard({
         </span>
       </div>
       <div style={{ padding: "12px 0 16px", display: "flex", gap: 8, alignItems: "center" }}>
-        <button
-          type="button"
-          onClick={onRetry}
-          disabled={disabled}
-          style={{ ...primaryAction, opacity: disabled ? 0.4 : 1 }}
-        >
-          <span style={{ color: "#D4FF4F", display: "flex" }}>
-            <RefreshIcon />
-          </span>
-          {t("scanScreen.tryAgain")}
-        </button>
-        {limited ? (
+        {paused ? null : (
+          <button
+            type="button"
+            onClick={onRetry}
+            disabled={disabled}
+            style={{ ...primaryAction, opacity: disabled ? 0.4 : 1 }}
+          >
+            <span style={{ color: "#D4FF4F", display: "flex" }}>
+              <RefreshIcon />
+            </span>
+            {t("scanScreen.tryAgain")}
+          </button>
+        )}
+        {limited || paused ? (
           <button
             type="button"
             onClick={onSamples}
@@ -568,11 +609,13 @@ function ErrorCard({
   index,
   onRetake,
   onRemove,
+  allowRetake,
 }: {
   photo: ScanPhoto;
   index: number;
   onRetake: () => void;
   onRemove: () => void;
+  allowRetake: boolean;
 }) {
   const { t, lang } = useTranslation();
   return (
@@ -624,12 +667,14 @@ function ErrorCard({
         {t(`scanScreen.${photo.unreadable ?? "other"}`)}
       </div>
       <div style={{ padding: "12px 0 16px", display: "flex", gap: 8, alignItems: "center" }}>
-        <button type="button" onClick={onRetake} style={primaryAction}>
-          <span style={{ color: "#D4FF4F", display: "flex" }}>
-            <RefreshIcon />
-          </span>
-          {t("scanScreen.retake")}
-        </button>
+        {allowRetake ? (
+          <button type="button" onClick={onRetake} style={primaryAction}>
+            <span style={{ color: "#D4FF4F", display: "flex" }}>
+              <RefreshIcon />
+            </span>
+            {t("scanScreen.retake")}
+          </button>
+        ) : null}
         <button
           type="button"
           onClick={onRemove}

@@ -7,6 +7,7 @@ import {
   ListIcon,
   ScanIcon,
 } from "@/components/icons";
+import { useDemoOnly } from "@/components/demo-mode";
 import { cn } from "@/lib/cn";
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
@@ -269,6 +270,7 @@ function useScrolled(px = 8) {
 
 export function SiteHeader() {
   const { t, lang, setLang } = useTranslation();
+  const scanHref = useDemoOnly() ? "/scan?sample=1" : "/scan?fresh=1";
   const glass = useScrolled(8);
   const langStyle = (code: "en" | "ko"): CSSProperties => ({
     borderRadius: 999,
@@ -304,7 +306,7 @@ export function SiteHeader() {
             </button>
           </div>
           <Link
-            href="/scan?fresh=1"
+            href={scanHref}
             className="!text-white rounded-full border-[1.5px] border-[#D4FF4F] bg-black px-3 py-[7px] text-[12px] font-semibold whitespace-nowrap lg:px-4 lg:py-2 lg:text-[14px]"
           >
             {t("landing.check")}
