@@ -9,7 +9,7 @@ This is not medical advice and does not replace a doctor or pharmacist.
 ## Features
 
 - Scan up to five medicine-bag photos, or try three fictional sample bags with no API call.
-- Read Korean pharmacy labels into a structured medicine list. English shows the English name; Korean shows the printed name.
+- Read Korean, English, and French medicine labels into a structured list. English shows the English name; Korean shows the printed name. Paracetamol, acétaminophène, and brands such as Tylenol or Advil count as the same ingredient as the generic name.
 - Safety checks are rules, not model output:
   - duplicate ingredients
   - daily dose against published adult limits (caution at 70%, danger above the limit)

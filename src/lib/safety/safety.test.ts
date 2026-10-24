@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { sampleResult } from "@/lib/mock";
-import { canonicalIngredient, checkSafety, ingredientSearchNames } from "@/lib/safety";
+import { canonicalIngredient, checkSafety, ingredientSearchNames, unifyIngredient } from "@/lib/safety";
 import { collectDurFindings } from "@/lib/safety/dur-match";
 import { durSnapshotDate, snapshotCovers } from "@/lib/safety/dur-snapshot";
 import type { Medicine } from "@/types";
@@ -179,7 +179,32 @@ describe("checkSafety", () => {
     assert.equal(canonicalIngredient("Cetirizine Hydrochloride"), "cetirizine");
     assert.equal(canonicalIngredient("Warfarin Sodium"), "warfarin");
     assert.equal(canonicalIngredient("Acetylsalicylic Acid"), "aspirin");
+    assert.equal(canonicalIngredient("아스피린"), "aspirin");
+    assert.equal(canonicalIngredient("아세트아미노펜"), "acetaminophen");
+    assert.equal(canonicalIngredient("acétaminophène"), "acetaminophen");
+    assert.equal(canonicalIngredient("paracétamol 500 mg"), "acetaminophen");
+    assert.equal(canonicalIngredient("Tylenol"), "acetaminophen");
+    assert.equal(canonicalIngredient("Panadol"), "acetaminophen");
+    assert.equal(canonicalIngredient("Advil 200 mg"), "ibuprofen");
+    assert.equal(canonicalIngredient("Nurofen"), "ibuprofen");
+    assert.equal(canonicalIngredient("ibuprofène"), "ibuprofen");
+    assert.equal(canonicalIngredient("and other ingredients"), null);
+    assert.equal(canonicalIngredient("et d'autres ingrédients"), null);
+    assert.equal(unifyIngredient("paracetamol 500 mg"), "Acetaminophen 500 mg");
+    assert.equal(unifyIngredient("acétaminophène"), "Acetaminophen");
+    assert.equal(unifyIngredient("Tylenol 325 mg, pseudoephedrine 30 mg"), "Acetaminophen 325 mg, pseudoephedrine 30 mg");
+    assert.equal(unifyIngredient("Advil 200 mg"), "Ibuprofen 200 mg");
+    assert.deepEqual(ingredientSearchNames("acetaminophen"), ["Acetaminophen", "Paracetamol"]);
     assert.deepEqual(ingredientSearchNames("aspirin"), ["Aspirin", "Acetylsalicylic Acid", "Acetylsalicylic"]);
+
+    const foreign = checkSafety([
+      medicine({ id: "kr", ingredient: "Acetaminophen 500 mg", dose: "1정", timesPerDay: 1 }),
+      medicine({ id: "ca", ingredient: "acétaminophène", dose: "1 tablet", timesPerDay: 1 }),
+    ]);
+    assert.equal(
+      foreign.some((alert) => alert.kind === "duplicate" && alert.ingredient === "acetaminophen"),
+      true,
+    );
 
     const found = collectDurFindings(
       [

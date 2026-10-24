@@ -78,7 +78,8 @@ export function ResultsScreen() {
   function shareText() {
     const lines = medicines.map((medicine) => {
       const kind = sourceKindLabel(medicine.sourceType, lang);
-      return `${displayName(medicine, lang)} — ${medicine.ingredient} — ${doseLine(medicine, lang)} — ${medicine.clinic}${kind ? ` — ${kind}` : ""}`;
+      const note = medicine.note ? ` — ${medicine.note}` : "";
+      return `${displayName(medicine, lang)} — ${medicine.ingredient}${note} — ${doseLine(medicine, lang)} — ${medicine.clinic}${kind ? ` — ${kind}` : ""}`;
     });
     const warnings = alerts.map((alert) => {
       const copy = warningCopy(alert, medicines, lang, t);
@@ -404,6 +405,9 @@ function MedicineCard({ medicine, onEdit }: { medicine: Medicine; onEdit: () => 
       <div className="pt-3 pb-3.5 lg:flex lg:items-end lg:gap-2.5 lg:pb-4">
         <div className="flex flex-col gap-1 lg:flex-1">
           <span style={{ fontWeight: 400, fontSize: 15, lineHeight: 1.35, color: "#4A4A50" }}>{medicine.ingredient}</span>
+          {medicine.note ? (
+            <span style={{ fontWeight: 400, fontSize: 13, lineHeight: 1.35, color: "#6B6B72" }}>{medicine.note}</span>
+          ) : null}
           <span style={{ fontWeight: 500, fontSize: 15, lineHeight: 1.35 }}>{doseLine(medicine, lang)}</span>
           {medicine.timeSlotsEstimated ? (
             <span style={{ fontWeight: 600, fontSize: 12, lineHeight: 1.3, color: "#6B6B72" }}>{t("results.estimated")}</span>
@@ -569,7 +573,7 @@ function pdfWarning(alert: SafetyAlert, medicines: Medicine[], lang: Lang, t: (k
 function pdfMedicine(medicine: Medicine, lang: Lang, t: (key: string) => string): PdfMedicine {
   return {
     name: displayName(medicine, lang),
-    ingredient: medicine.ingredient,
+    ingredient: [medicine.ingredient, medicine.note].filter(Boolean).join("\n"),
     dose: formatDoseOrDash(medicine.dose, lang),
     times: medicine.timesPerDay === null ? "—" : formatTimes(medicine.timesPerDay, lang),
     days: formatDays(medicine.days, lang),

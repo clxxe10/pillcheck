@@ -1,4 +1,5 @@
 import { AiError } from "@/lib/ai/errors";
+import { unifyIngredient } from "@/lib/safety";
 import type {
   Confidence,
   DoseSlot,
@@ -13,6 +14,12 @@ const SLOT_ORDER: DoseSlot[] = ["morning", "lunch", "evening", "bedtime"];
 const CONFIDENCE: Confidence[] = ["high", "medium", "low"];
 const SOURCE_TYPES: SourceType[] = ["prescription_bag", "prescription", "otc_box", "bottle", "blister", "unknown"];
 const REASONS: UnreadableReason[] = ["blurry", "glare", "cropped", "not_medicine", "no_package", "other"];
+
+const PRINTED_STRENGTH = /\d+(?:[.,]\d+)?\s*(?:mcg|μg|µg|㎍|mg|㎎|밀리그램|그램|g)\b/i;
+
+function hasPrintedStrength(...values: string[]) {
+  return values.some((value) => PRINTED_STRENGTH.test(value));
+}
 
 const DEFAULT_SLOTS: Record<number, DoseSlot[]> = {
   1: ["morning"],
@@ -105,17 +112,20 @@ export function normalizeExtraction(raw: unknown, clinics: string[]): ExtractRes
     }
 
     const days = int(item.days);
+    const ingredient = unifyIngredient(text(item.ingredient, 240));
+    const note = text(item.note, 180);
     let confidence = CONFIDENCE.includes(item.confidence as Confidence)
       ? (item.confidence as Confidence)
       : "low";
-    if (scheduleMissing || timeSlotsEstimated) confidence = "low";
+    if (scheduleMissing || timeSlotsEstimated || !hasPrintedStrength(name, nameEn, ingredient)) confidence = "low";
 
     medicines.push({
       id: `med-${medicines.length + 1}`,
       name,
       nameEn,
-      ingredient: text(item.ingredient, 240),
+      ingredient,
       dose: text(item.dose, 40),
+      ...(note ? { note } : {}),
       timesPerDay,
       days: days && days > 0 ? Math.min(days, 365) : null,
       timeSlots,

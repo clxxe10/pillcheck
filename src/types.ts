@@ -22,6 +22,8 @@ export type Medicine = {
   ingredient: string;
   /** Amount per dose as printed, e.g. "1정", "2 tablets", "5 mL". Empty when the label has none. */
   dose: string;
+  /** Printed phrase such as "and other ingredients", when unnamed ingredients were left out. */
+  note?: string;
   /** null when the label does not say how many times a day. */
   timesPerDay: number | null;
   /** null = ongoing, or not printed. */

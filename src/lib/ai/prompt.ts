@@ -31,6 +31,7 @@ export const extractSchema: Record<string, unknown> = {
           "sourceImageIndex",
           "sourceType",
           "confidence",
+          "note",
         ],
         properties: {
           name: { type: "string" },
@@ -44,6 +45,7 @@ export const extractSchema: Record<string, unknown> = {
           sourceImageIndex: { type: "integer" },
           sourceType: { type: "string", enum: [...SOURCE_TYPES] },
           confidence: { type: "string", enum: [...CONFIDENCE] },
+          note: { type: "string" },
         },
       },
     },
@@ -88,16 +90,29 @@ How Korean pharmacy labels are laid out:
 - 총 투약일수: total number of days.
 - 용법 / 복용시간: when to take it — 아침, 점심, 저녁, 취침전 (자기 전). Often a grid with marks (●, ✓, 1) under 아침/점심/저녁/자기전, or text like "1일 3회 식후 30분".
 
-Boxes, bottles, and blister packs:
-- Read the product name, the active ingredient, and the strength from the package.
-- If the package also prints how to take it (1회량, 1일 횟수, 용법·용량), read that too. Do not leave dose or timesPerDay empty when they are printed.
+Boxes, bottles, and blister packs, in any language:
+- Read the product name, each active ingredient that is printed, and the strength from the package.
+- If the package also prints how to take it, read that too. Do not leave dose or timesPerDay empty when a single amount and a single daily count are printed.
 - If times per day, number of days, or time of day are not printed, do not invent them.
 
+Foreign labels (English, French, and other languages) are medicines too. OTC cartons, bottles, and prescription labels all count.
+- "Contient de l'acétaminophène", "Contains acetaminophen", and "paracetamol" are the ingredient Acetaminophen. Write the English generic name, not the French spelling and not the brand.
+- "Take 1 tablet every 4-6 hours" → dose "1 tablet". "every 6 hours" (one interval) → timesPerDay 4, because 24 divided by those hours. "every 4-6 hours" is a range, not one daily count: set timesPerDay to 0 unless the label also prints a maximum number of doses per day. Do not invent the daily total. confidence is "low".
+- Use a brand only to choose the generic, and only when that brand is this product: Tylenol or Panadol → Acetaminophen; Advil or Nurofen → Ibuprofen. Never guess a strength from the brand.
+
+Strength:
+- Copy a strength only when it is printed (mg, g, 밀리그램). If it is not visible, omit it. Never guess 325 mg, 500 mg, or any other amount. dose is "" when the amount per dose is not printed. confidence is "low" whenever the strength or the per-dose amount is missing. Low confidence is shown as "Needs review".
+
+Combination products, such as cold medicines:
+- List only active ingredients whose names are printed, each with its printed strength.
+- If the label says "and other ingredients", "et d'autres ingrédients", or the same idea in another language, do not invent those ingredients. Put that phrase, as printed, in note. Otherwise note is "".
+
 For each medicine return:
-- name: the name exactly as printed, in the original language (usually Korean). Keep the strength if printed.
+- name: the name exactly as printed, in the language on the label (Korean, English, French, or another). Keep the strength if it is printed.
 - nameEn: English name. Use the known English brand if there is one (타이레놀정500밀리그램 → "Tylenol 500 mg"), otherwise the English generic name plus strength. Write strength with a space before the unit ("500 mg"). Do not translate the dosage form (정, 캡슐, 장용정) into the name: 아스피린장용정 100mg → "Aspirin 100 mg", not "Aspirin enteric-coated 100 mg".
-- ingredient: active ingredient(s) in English generic names with strength, comma separated (e.g. "Acetaminophen 325 mg, pseudoephedrine 30 mg"). If the label says 저용량, include it as "low dose": 아스피린 100mg (저용량) → "Aspirin, low dose 100 mg".
-- dose: amount per dose exactly as printed, with its unit (e.g. "1정"). Use "" when the package does not say how much to take at one time.
+- ingredient: active ingredient(s) in English generic names with strength, comma separated (e.g. "Acetaminophen 325 mg, pseudoephedrine 30 mg"). If the label says 저용량, include it as "low dose": 아스피린 100mg (저용량) → "Aspirin, low dose 100 mg". Leave the strength off an ingredient when it is not printed.
+- dose: amount per dose exactly as printed, with its unit (e.g. "1정", "1 tablet", "1 comprimé"). Use "" when the package does not say how much to take at one time.
+- note: the printed "and other ingredients" / "et d'autres ingrédients" phrase, or "".
 - timesPerDay: times per day as an integer. Use 0 when it is not printed.
 - days: number of days as an integer. Use 0 when it is not printed or the medicine is ongoing.
 - timeSlots: from a 용법 grid or text, using "morning" (아침), "lunch" (점심), "evening" (저녁), "bedtime" (취침전/자기 전). If only a count is printed and no time of day: 1회 → ["morning"], 2회 → ["morning","evening"], 3회 → ["morning","lunch","evening"], 4회 → all four. If 취침전 is printed, include "bedtime". Use [] when no count and no time of day are printed.

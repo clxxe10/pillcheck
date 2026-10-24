@@ -62,6 +62,66 @@ describe("normalizeExtraction", () => {
     assert.equal(medicine.confidence, "low");
   });
 
+  it("keeps a printed foreign schedule and the unnamed-ingredient note", () => {
+    const result = normalizeExtraction(
+      {
+        medicines: [
+          {
+            name: "Tylenol Rhume",
+            nameEn: "Tylenol Cold",
+            ingredient: "acétaminophène 325 mg, pseudoephedrine 30 mg",
+            dose: "1 comprimé",
+            timesPerDay: 4,
+            days: 0,
+            timeSlots: ["morning", "lunch", "evening", "bedtime"],
+            timeSlotsEstimated: false,
+            sourceImageIndex: 0,
+            sourceType: "otc_box",
+            confidence: "high",
+            note: "et d'autres ingrédients",
+          },
+        ],
+        unreadable: [],
+      },
+      [""],
+    );
+    const medicine = result.medicines[0];
+    assert.equal(medicine.ingredient, "Acetaminophen 325 mg, pseudoephedrine 30 mg");
+    assert.equal(medicine.dose, "1 comprimé");
+    assert.equal(medicine.timesPerDay, 4);
+    assert.equal(medicine.note, "et d'autres ingrédients");
+    assert.equal(medicine.confidence, "high");
+  });
+
+  it("does not guess a strength that is not printed", () => {
+    const result = normalizeExtraction(
+      {
+        medicines: [
+          {
+            name: "Tylenol",
+            nameEn: "Tylenol",
+            ingredient: "Acetaminophen",
+            dose: "",
+            timesPerDay: 0,
+            days: 0,
+            timeSlots: [],
+            sourceImageIndex: 0,
+            sourceType: "otc_box",
+            confidence: "high",
+          },
+        ],
+        unreadable: [],
+      },
+      [""],
+    );
+    const medicine = result.medicines[0];
+    assert.equal(medicine.ingredient, "Acetaminophen");
+    assert.equal(medicine.dose, "");
+    assert.equal(medicine.timesPerDay, null);
+    assert.equal(medicine.confidence, "low");
+    assert.equal(medicine.note, undefined);
+  });
+
   it("asks for the package when the photo is loose tablets", () => {
     const result = normalizeExtraction(
       {

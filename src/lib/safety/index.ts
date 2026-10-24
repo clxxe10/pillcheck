@@ -113,7 +113,29 @@ const DISPLAY: Record<string, { en: string; ko: string }> = {
   itraconazole: { en: "itraconazole", ko: "이트라코나졸" },
 };
 
-const STOP = new Set(["dose", "doses", "low", "high", "oral", "tablet", "tablets", "capsule", "daily", "acid"]);
+const STOP = new Set([
+  "dose",
+  "doses",
+  "low",
+  "high",
+  "oral",
+  "tablet",
+  "tablets",
+  "capsule",
+  "capsules",
+  "daily",
+  "acid",
+  "other",
+  "others",
+  "autre",
+  "autres",
+  "ingredient",
+  "ingredients",
+  "contains",
+  "contient",
+  "excipient",
+  "excipients",
+]);
 
 const ALIASES: Record<string, string[]> = {
   acetaminophen: ["acetaminophen", "paracetamol", "아세트아미노펜"],
@@ -126,6 +148,13 @@ const ALIASES: Record<string, string[]> = {
   itraconazole: ["itraconazole", "이트라코나졸"],
 };
 
+/** Spellings and brands that mean the same ingredient, but are not DUR search names. */
+const MATCH_ALIASES: Record<string, string[]> = {
+  acetaminophen: ["acetaminophene", "acetaminofen", "tylenol", "panadol", "doliprane", "dafalgan", "efferalgan"],
+  ibuprofen: ["ibuprofene", "advil", "nurofen", "motrin", "brufen"],
+  aspirin: ["aspirine", "acetylsalicylique"],
+};
+
 const limits = limitsJson as { cautionRatio: number; ingredients: LimitRow[] };
 const interactions = interactionsJson as { contraindicated: InteractionRow[]; caution: InteractionRow[] };
 const limitByName = new Map(limits.ingredients.map((row) => [row.name, row]));
@@ -134,21 +163,53 @@ export function ingredientLabel(name: string, lang: "en" | "ko") {
   return DISPLAY[name]?.[lang] ?? name;
 }
 
-/** English lowercase ingredient name, or null when the text has no usable name. */
-export function canonicalIngredient(raw: string): string | null {
-  const text = raw
-    .toLowerCase()
+function foldIngredient(raw: string) {
+  return raw.normalize("NFD").replace(/\p{M}/gu, "").normalize("NFC").toLowerCase();
+}
+
+function ingredientText(raw: string) {
+  return foldIngredient(raw)
     .replace(/[^a-z0-9가-힣\s]+/g, " ")
     .split(/\s+/)
     .filter((word) => word && !SALTS.has(word) && !STOP.has(word))
     .join(" ");
+}
+
+/** English lowercase ingredient name, or null when the text has no usable name. */
+export function canonicalIngredient(raw: string): string | null {
+  const text = ingredientText(raw);
   if (!text) return null;
   for (const [name, aliases] of Object.entries(ALIASES)) {
+    if (aliases.some((alias) => text.includes(alias))) return name;
+  }
+  for (const [name, aliases] of Object.entries(MATCH_ALIASES)) {
     if (aliases.some((alias) => text.includes(alias))) return name;
   }
   const word = text.match(/[a-z]{4,}/)?.[0];
   if (!word || STOP.has(word)) return null;
   return word;
+}
+
+const STRENGTH_TAIL = /(\d+(?:[.,]\d+)?\s*(?:mcg|μg|µg|㎍|mg|㎎|밀리그램|그램|g)\b.*)$/i;
+
+/** Rewrites a known foreign spelling or brand to the English generic, and keeps a printed strength. */
+export function unifyIngredient(raw: string) {
+  return raw
+    .split(",")
+    .map((part) => {
+      const trimmed = part.trim();
+      if (!trimmed) return "";
+      const canonical = canonicalIngredient(trimmed);
+      const words = foldIngredient(trimmed).split(/[^a-z0-9가-힣]+/).filter(Boolean);
+      if (!canonical || words.includes(canonical)) return trimmed;
+      const label = ingredientLabel(canonical, "en");
+      const titled = label.charAt(0).toUpperCase() + label.slice(1);
+      const low = /low[\s-]*dose|저용량/i.test(trimmed);
+      const strength = trimmed.match(STRENGTH_TAIL)?.[1];
+      return [low ? `${titled}, low dose` : titled, strength].filter(Boolean).join(" ");
+    })
+    .filter(Boolean)
+    .join(", ");
 }
 
 /** Korean ingredient names DUR accepts as a filter. English filters are ignored by the live API. */
