@@ -201,14 +201,29 @@ export function nextDoseBadge(hours: number, minutes: number, lang: Lang) {
   return lang === "ko" ? `${rounded}시간 후` : `In ${rounded} hr`;
 }
 
+const PHOTO_PLACEHOLDER = /^(?:사진|photo)\s+(\d+)$/i;
+
+/** A missing clinic, or a saved "사진 1" / "Photo 1", follows the current language. A typed clinic name stays as entered. */
+export function placeLabel(clinic: string, photoIndex: number, lang: Lang) {
+  const trimmed = clinic.trim();
+  const match = trimmed.match(PHOTO_PLACEHOLDER);
+  if (!trimmed || match) {
+    const number = match ? Number(match[1]) : photoIndex;
+    return lang === "ko" ? `사진 ${number}` : `Photo ${number}`;
+  }
+  return trimmed;
+}
+
 export function photoPlaceLabel(index: number, clinic: string, lang: Lang) {
   if (lang === "ko") return `사진 ${index} · ${clinic}`;
   return `Photo ${index} · ${clinic}`;
 }
 
 export function sourcePlaceLabel(clinic: string, index: number, lang: Lang) {
-  if (lang === "ko") return `${clinic} · 사진 ${index}`;
-  return `${clinic} · Photo ${index}`;
+  const place = placeLabel(clinic, index, lang);
+  const photo = lang === "ko" ? `사진 ${index}` : `Photo ${index}`;
+  if (place === photo) return photo;
+  return `${place} · ${photo}`;
 }
 
 export function resultsMeta(photoCount: number, date: string, lang: Lang) {

@@ -15,6 +15,7 @@ import {
   formatToday,
   issueCountLabel,
   medicineSlots,
+  placeLabel,
   resultsMeta,
   reviewCountLabel,
   shortName,
@@ -79,7 +80,8 @@ export function ResultsScreen() {
     const lines = medicines.map((medicine) => {
       const kind = sourceKindLabel(medicine.sourceType, lang);
       const note = medicine.note ? ` — ${medicine.note}` : "";
-      return `${displayName(medicine, lang)} — ${medicine.ingredient}${note} — ${doseLine(medicine, lang)} — ${medicine.clinic}${kind ? ` — ${kind}` : ""}`;
+      const place = placeLabel(medicine.clinic, medicine.sourceImageIndex + 1, lang);
+      return `${displayName(medicine, lang)} — ${medicine.ingredient}${note} — ${doseLine(medicine, lang)} — ${place}${kind ? ` — ${kind}` : ""}`;
     });
     const warnings = alerts.map((alert) => {
       const copy = warningCopy(alert, medicines, lang, t);
@@ -206,14 +208,20 @@ export function ResultsScreen() {
               alerts={alerts}
               onShare={share}
             />
-            <ResultsActions saving={saving} onSavePdf={savePdf} onPrint={() => window.print()} onShare={share} onStartOver={startOver} />
+            <div className="lg:hidden">
+              <ResultsActions saving={saving} onSavePdf={savePdf} onPrint={() => window.print()} onShare={share} onStartOver={startOver} />
+            </div>
           </div>
 
           <div id="schedule" className="order-3 mt-[30px] lg:order-none lg:col-start-2 lg:row-start-1 lg:mt-0">
             <Schedule medicines={medicines} slot={slot} onSlot={setSlot} />
           </div>
 
-          <div className="order-2 lg:order-none lg:col-span-2 lg:row-start-2">
+          <div className="hidden lg:col-span-2 lg:row-start-2 lg:mt-4 lg:block">
+            <ResultsActions saving={saving} onSavePdf={savePdf} onPrint={() => window.print()} onShare={share} onStartOver={startOver} />
+          </div>
+
+          <div className="order-2 lg:order-none lg:col-span-2 lg:row-start-3">
             <div className="mx-0.5 mt-[30px] mb-3 flex items-center justify-between lg:mt-8">
               <h2 style={{ margin: 0, fontWeight: 500, fontSize: 22, letterSpacing: "-0.01em" }}>
                 {t("results.medicines")}
@@ -353,7 +361,9 @@ function ResultAlert({ alert, medicines }: { alert: SafetyAlert; medicines: Medi
         {alert.medicineIds.map((id) => {
           const medicine = medicines.find((item) => item.id === id);
           if (!medicine) return null;
-          return <SoftChip key={id}>{`${shortName(medicine, lang)} · ${medicine.clinic}`}</SoftChip>;
+          return (
+            <SoftChip key={id}>{`${shortName(medicine, lang)} · ${placeLabel(medicine.clinic, medicine.sourceImageIndex + 1, lang)}`}</SoftChip>
+          );
         })}
       </div>
     </div>
@@ -415,7 +425,7 @@ function MedicineCard({ medicine, onEdit }: { medicine: Medicine; onEdit: () => 
           <div className="mt-1.5 flex items-center justify-between gap-2 lg:mt-0 lg:block">
             <span style={{ display: "flex", alignItems: "center", gap: 6, fontWeight: 400, fontSize: 14, color: "#6B6B72" }}>
               <PinIcon size={15} />
-              {medicine.clinic}
+              {placeLabel(medicine.clinic, medicine.sourceImageIndex + 1, lang)}
             </span>
             <button
               type="button"
@@ -469,7 +479,7 @@ function ResultsActions({
 }) {
   const { t } = useTranslation();
   return (
-    <div className="no-print grid grid-cols-2 gap-2 lg:flex lg:flex-wrap">
+    <div className="no-print grid grid-cols-2 gap-2 lg:flex lg:flex-nowrap">
       <ActionButton icon="download-white" label={saving ? t("results.saving") : t("results.savePdf")} primary busy={saving} onClick={onSavePdf} />
       <ActionButton icon="printer" label={t("results.print")} onClick={onPrint} />
       <ActionButton icon="share" label={t("results.share")} onClick={onShare} />
@@ -577,7 +587,7 @@ function pdfMedicine(medicine: Medicine, lang: Lang, t: (key: string) => string)
     dose: formatDoseOrDash(medicine.dose, lang),
     times: medicine.timesPerDay === null ? "—" : formatTimes(medicine.timesPerDay, lang),
     days: formatDays(medicine.days, lang),
-    clinic: medicine.clinic,
+    clinic: placeLabel(medicine.clinic, medicine.sourceImageIndex + 1, lang),
     estimated: medicine.timeSlotsEstimated ? t("results.estimated") : "",
   };
 }

@@ -42,6 +42,10 @@ The app was built in Cursor.
 | Ibuprofen + low-dose aspirin | [FDA](https://www.fda.gov/drugs/safe-use-aspirin/information-about-taking-ibuprofen-and-aspirin-together) |
 | Combination contraindications | [MFDS DUR ingredient API](https://www.data.go.kr/data/15056780/openapi.do) when a key is set. Without a key, a short local fallback in `src/lib/safety/interactions.json` |
 | Duplicate ingredients | The names printed on the labels. No external URL |
+| Sample photo `public/samples/ibuprofen-uk.jpg` | [Brett Jordan](https://unsplash.com/photos/200-mg-sainsburys-healthcare-ibuprofen-capsules-box-rJVflgqasr4) on Unsplash |
+| Sample photo `public/samples/tylenol-rhume-ca.jpg` | [Erik Mclean](https://unsplash.com/@introspectivedsgn) on Unsplash |
+
+Both sample photos are free under the [Unsplash License](https://unsplash.com/license).
 
 Limits are general adult ceilings, not a personal dose.
 
