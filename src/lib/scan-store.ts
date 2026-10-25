@@ -1,7 +1,9 @@
 "use client";
 
 import { ExtractRequestError, requestExtraction } from "@/lib/extract-client";
+import { convertHeicToJpeg } from "@/lib/heic-convert";
 import { samplePhotos, sampleResult } from "@/lib/mock";
+import { errorDetail, isHeic, logUploadFailure } from "@/lib/upload-error";
 import type { ResultSource, SessionPhoto } from "@/lib/session";
 import type { ExtractErrorCode, Medicine, ScanPhoto, UnreadableReason } from "@/types";
 import { useSyncExternalStore } from "react";
@@ -60,18 +62,54 @@ function revoke(photo: ScanPhoto) {
 }
 
 let uploadCount = 0;
+let convertSerial = 0;
+const convertTokens = new Map<string, number>();
 
 function photoFromFile(file: File): ScanPhoto {
   uploadCount += 1;
   const base = file.name.replace(/\.[^.]+$/, "") || `IMG_${String(uploadCount).padStart(4, "0")}`;
+  const heic = isHeic(file);
   return {
     id: `upload-${Date.now()}-${uploadCount}`,
     filename: base.slice(0, 24),
     clinic: "",
     sample: false,
-    file,
-    previewUrl: URL.createObjectURL(file),
+    converting: heic,
+    file: heic ? undefined : file,
+    previewUrl: heic ? undefined : URL.createObjectURL(file),
   };
+}
+
+function beginHeic(id: string, file: File) {
+  convertSerial += 1;
+  const token = convertSerial;
+  convertTokens.set(id, token);
+  void finishHeic(id, file, token);
+}
+
+async function finishHeic(id: string, file: File, token: number) {
+  const current = () => convertTokens.get(id) === token && state.photos.some((photo) => photo.id === id);
+  try {
+    const jpeg = await convertHeicToJpeg(file);
+    const previewUrl = URL.createObjectURL(jpeg);
+    if (!current()) {
+      URL.revokeObjectURL(previewUrl);
+      return;
+    }
+    set({
+      photos: state.photos.map((photo) =>
+        photo.id === id ? { ...photo, file: jpeg, converting: false, convertFailed: false, previewUrl } : photo,
+      ),
+    });
+  } catch (error) {
+    logUploadFailure("unsupported_type", errorDetail(error));
+    if (!current()) return;
+    set({
+      photos: state.photos.map((photo) =>
+        photo.id === id ? { ...photo, file: undefined, converting: false, convertFailed: true, previewUrl: undefined } : photo,
+      ),
+    });
+  }
 }
 
 /** Drops in-memory photos so a new check starts empty. */
@@ -94,7 +132,11 @@ export function addFiles(files: File[]) {
   const images = files.filter((file) => file.type.startsWith("image/") || /\.(heic|heif)$/i.test(file.name));
   if (images.length === 0) return;
   const keep = state.photos.filter((photo) => !photo.sample);
-  set({ photos: [...keep, ...images.map(photoFromFile)], notice: null });
+  const added = images.map(photoFromFile);
+  set({ photos: [...keep, ...added], notice: null });
+  added.forEach((photo, index) => {
+    if (photo.converting) beginHeic(photo.id, images[index]);
+  });
 }
 
 function withWholeGroups(photos: ScanPhoto[]) {
@@ -147,14 +189,16 @@ function groupIndexes(photos: ScanPhoto[]) {
 }
 
 export function replacePhoto(id: string, file: File) {
+  const next = photoFromFile(file);
   set({
     photos: state.photos.map((photo) => {
       if (photo.id !== id) return photo;
       revoke(photo);
-      return { ...photoFromFile(file), id: photo.id, clinic: photo.clinic, groupId: photo.groupId };
+      return { ...next, id: photo.id, clinic: photo.clinic, groupId: photo.groupId };
     }),
     notice: null,
   });
+  if (next.converting) beginHeic(id, file);
 }
 
 export function setClinic(id: string, clinic: string) {
@@ -182,8 +226,13 @@ export function clearNotice() {
 }
 
 export function startAnalysis(fallbackClinic: (index: number) => string) {
+  if (state.photos.some((photo) => photo.converting)) return false;
+  if (state.photos.some((photo) => photo.convertFailed)) {
+    set({ notice: { kind: "failed", code: "unsupported_type" } });
+    return false;
+  }
   const photos = state.photos
-    .filter((photo) => !photo.unreadable)
+    .filter((photo) => !photo.unreadable && !photo.convertFailed)
     .map((photo, index) => ({ ...photo, clinic: photo.clinic.trim() || fallbackClinic(index) }));
   if (photos.length === 0) return false;
   set({ pending: { photos, demo: photos.every((photo) => photo.sample), groups: groupIndexes(photos) }, notice: null });
@@ -205,7 +254,7 @@ async function analyze(pending: PendingAnalysis): Promise<AnalysisOutcome> {
     await new Promise((resolve) => window.setTimeout(resolve, DEMO_DELAY_MS));
     return { type: "success", source: "demo", photos: sessionPhotos, medicines: demoMedicines(pending.photos) };
   }
-  if (pending.photos.length > 5) return { type: "error", code: "bad_request" };
+  if (pending.photos.length > 5) return { type: "error", code: "too_large" };
   try {
     const indexed = pending.photos.flatMap((photo, index) =>
       photo.file ? [{ index, file: photo.file, clinic: photo.clinic }] : [],

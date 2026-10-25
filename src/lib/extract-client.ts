@@ -1,5 +1,14 @@
 "use client";
 
+import { decodeForUpload } from "@/lib/heic-convert";
+import {
+  codeFromStatus,
+  isHeic,
+  errorDetail,
+  logUploadFailure,
+  payloadTooLarge,
+  utf8Bytes,
+} from "@/lib/upload-error";
 import type {
   ExtractErrorCode,
   ExtractErrorResponse,
@@ -12,7 +21,10 @@ const JPEG_QUALITY = 0.85;
 const REQUEST_TIMEOUT_MS = 60_000;
 
 export class ExtractRequestError extends Error {
-  constructor(readonly code: ExtractErrorCode | "network") {
+  constructor(
+    readonly code: ExtractErrorCode | "network",
+    readonly detail = "",
+  ) {
     super(code);
     this.name = "ExtractRequestError";
   }
@@ -36,10 +48,20 @@ function readAsBase64(blob: Blob) {
   });
 }
 
-/** Shrinks big phone photos so uploads stay small; falls back to the original file. */
+function unsupported(error: unknown) {
+  return new ExtractRequestError("unsupported_type", errorDetail(error) || "Could not open this photo.");
+}
+
+/** Shrinks big phone photos. HEIC is converted first and is never sent as the original file. */
 async function encodeImage(file: File): Promise<{ data: string; mimeType: string }> {
+  let source = file;
   try {
-    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    source = await decodeForUpload(file);
+  } catch (error) {
+    throw unsupported(error);
+  }
+  try {
+    const bitmap = await createImageBitmap(source, { imageOrientation: "from-image" });
     const scale = Math.min(1, MAX_EDGE / Math.max(bitmap.width, bitmap.height));
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(bitmap.width * scale);
@@ -53,8 +75,9 @@ async function encodeImage(file: File): Promise<{ data: string; mimeType: string
     );
     if (!blob) throw new Error("encode failed");
     return { data: await readAsBase64(blob), mimeType: "image/jpeg" };
-  } catch {
-    return { data: await readAsBase64(file), mimeType: guessMimeType(file) };
+  } catch (error) {
+    if (isHeic(file) || error instanceof ExtractRequestError) throw error instanceof ExtractRequestError ? error : unsupported(error);
+    return { data: await readAsBase64(source), mimeType: guessMimeType(source) };
   }
 }
 
@@ -62,9 +85,28 @@ export async function requestExtraction(
   photos: { file: File; clinic: string }[],
   extra?: { groups?: number[][]; focus?: { name: string; nameEn: string } },
 ): Promise<ExtractResponse> {
-  const images: ExtractImage[] = await Promise.all(
-    photos.map(async (photo) => ({ ...(await encodeImage(photo.file)), clinic: photo.clinic })),
-  );
+  let images: ExtractImage[];
+  try {
+    images = await Promise.all(
+      photos.map(async (photo) => ({ ...(await encodeImage(photo.file)), clinic: photo.clinic })),
+    );
+  } catch (error) {
+    const failure = error instanceof ExtractRequestError ? error : unsupported(error);
+    logUploadFailure(failure.code, failure.detail);
+    throw failure;
+  }
+
+  const payload = JSON.stringify({
+    images,
+    ...(extra?.groups?.length ? { groups: extra.groups } : {}),
+    ...(extra?.focus ? { focus: extra.focus } : {}),
+  });
+  const bytes = utf8Bytes(payload);
+  if (payloadTooLarge(bytes)) {
+    const failure = new ExtractRequestError("too_large", `payload ${bytes} bytes`);
+    logUploadFailure(failure.code, failure.detail);
+    throw failure;
+  }
 
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -73,16 +115,14 @@ export async function requestExtraction(
     response = await fetch("/api/extract", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        images,
-        ...(extra?.groups?.length ? { groups: extra.groups } : {}),
-        ...(extra?.focus ? { focus: extra.focus } : {}),
-      }),
+      body: payload,
       signal: controller.signal,
       cache: "no-store",
     });
   } catch {
-    throw new ExtractRequestError(controller.signal.aborted ? "timeout" : "network");
+    const code = controller.signal.aborted ? "timeout" : "network";
+    logUploadFailure(code, "");
+    throw new ExtractRequestError(code);
   } finally {
     window.clearTimeout(timer);
   }
@@ -92,10 +132,13 @@ export async function requestExtraction(
     | ExtractErrorResponse
     | null;
   if (!response.ok || !body || "error" in body) {
-    if (body && "error" in body) throw new ExtractRequestError(body.error);
-    if (response.status === 429) throw new ExtractRequestError("rate_limited");
-    if (response.status === 504) throw new ExtractRequestError("timeout");
-    throw new ExtractRequestError("provider_error");
+    const errorBody = body && "error" in body ? body : null;
+    const failure = new ExtractRequestError(
+      codeFromStatus(response.status, errorBody?.error, errorBody?.message),
+      errorBody?.message ?? "",
+    );
+    logUploadFailure(failure.code, failure.detail);
+    throw failure;
   }
   if (!Array.isArray(body.medicines) || !Array.isArray(body.unreadable)) {
     throw new ExtractRequestError("invalid_response");

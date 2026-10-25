@@ -26,7 +26,7 @@ export async function runClaude({ prompt, images, signal, timeoutMs }: ProviderR
 
   for (const image of images) {
     if (!CLAUDE_IMAGE_TYPES.includes(image.mimeType as ClaudeImageType)) {
-      throw new AiError("bad_request", `Claude does not accept ${image.mimeType} images.`);
+      throw new AiError("unsupported_type", `Claude does not accept ${image.mimeType} images.`);
     }
   }
 

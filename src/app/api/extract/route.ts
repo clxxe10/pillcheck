@@ -2,6 +2,7 @@ import { extractMedicines } from "@/lib/ai";
 import { AiError, errorStatus } from "@/lib/ai/errors";
 import { demoOnlyResponse } from "@/lib/demo-mode";
 import { clientIp, takeExtractSlot } from "@/lib/extract-limit";
+import { redactSecrets } from "@/lib/upload-error";
 import type { ExtractErrorCode, ExtractErrorResponse, ExtractImage } from "@/types";
 
 export const maxDuration = 60;
@@ -22,13 +23,13 @@ function fail(code: ExtractErrorCode, message: string) {
   return Response.json(body, { status: errorStatus[code], headers: noStore });
 }
 
-function readImages(body: unknown): ExtractImage[] | string {
+function readImages(body: unknown): { images: ExtractImage[] } | { code: ExtractErrorCode; message: string } {
   if (!body || typeof body !== "object" || !Array.isArray((body as { images?: unknown }).images)) {
-    return "Expected { images: [...] }.";
+    return { code: "bad_request", message: "Expected { images: [...] }." };
   }
   const list = (body as { images: unknown[] }).images;
-  if (list.length === 0) return "Add at least one photo.";
-  if (list.length > MAX_IMAGES) return `Send at most ${MAX_IMAGES} photos at a time.`;
+  if (list.length === 0) return { code: "bad_request", message: "Add at least one photo." };
+  if (list.length > MAX_IMAGES) return { code: "too_large", message: `Send at most ${MAX_IMAGES} photos at a time.` };
 
   const images: ExtractImage[] = [];
   let total = 0;
@@ -36,10 +37,11 @@ function readImages(body: unknown): ExtractImage[] | string {
     const item = (entry ?? {}) as Record<string, unknown>;
     const data = typeof item.data === "string" ? item.data.replace(/^data:[^,]*,/, "") : "";
     const mimeType = typeof item.mimeType === "string" ? item.mimeType.toLowerCase() : "";
-    if (!data || data.length > MAX_IMAGE_CHARS || !BASE64.test(data)) {
-      return `Photo ${index + 1} is missing, too large, or not base64.`;
+    if (!data || !BASE64.test(data)) return { code: "bad_request", message: `Photo ${index + 1} is missing or not base64.` };
+    if (data.length > MAX_IMAGE_CHARS) return { code: "too_large", message: `Photo ${index + 1} is too large.` };
+    if (!IMAGE_TYPES.includes(mimeType)) {
+      return { code: "unsupported_type", message: `Photo ${index + 1} has an unsupported type.` };
     }
-    if (!IMAGE_TYPES.includes(mimeType)) return `Photo ${index + 1} has an unsupported type.`;
     total += data.length;
     images.push({
       data,
@@ -47,8 +49,8 @@ function readImages(body: unknown): ExtractImage[] | string {
       clinic: typeof item.clinic === "string" ? item.clinic.trim().slice(0, 80) : "",
     });
   }
-  if (total > MAX_TOTAL_CHARS) return "The photos are too large together. Send fewer at once.";
-  return images;
+  if (total > MAX_TOTAL_CHARS) return { code: "too_large", message: "The photos are too large together. Send fewer at once." };
+  return { images };
 }
 
 function readGroups(body: unknown, count: number) {
@@ -84,7 +86,7 @@ export async function POST(request: Request) {
   if (paused) return paused;
 
   const declared = Number(request.headers.get("content-length") || 0);
-  if (declared > MAX_BODY_CHARS) return fail("bad_request", "The photos are too large. Send fewer or smaller ones.");
+  if (declared > MAX_BODY_CHARS) return fail("too_large", "The photos are too large. Send fewer or smaller ones.");
 
   let body: unknown;
   try {
@@ -93,8 +95,9 @@ export async function POST(request: Request) {
     return fail("bad_request", "The request body must be JSON.");
   }
 
-  const images = readImages(body);
-  if (typeof images === "string") return fail("bad_request", images);
+  const read = readImages(body);
+  if ("code" in read) return fail(read.code, read.message);
+  const images = read.images;
 
   const allowance = takeExtractSlot(clientIp(request));
   if (allowance === "rate_limited") {
@@ -110,7 +113,7 @@ export async function POST(request: Request) {
   } catch (error) {
     const aiError =
       error instanceof AiError ? error : new AiError("provider_error", "Unexpected error while reading photos.");
-    console.error(`[api/extract] ${aiError.code}: ${aiError.message}`);
+    console.error(`[api/extract] ${aiError.code}: ${redactSecrets(aiError.message)}`);
     return fail(aiError.code, aiError.message);
   }
 }

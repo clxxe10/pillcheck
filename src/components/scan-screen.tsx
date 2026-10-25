@@ -15,6 +15,7 @@ import {
 } from "@/components/icons";
 import { photoStripe } from "@/components/orb";
 import { analyzeLabel, photoCountLabel, photoPlaceLabel } from "@/lib/format";
+import { scanFailKey } from "@/lib/upload-error";
 import { useTranslation } from "@/lib/i18n";
 import {
   addFiles,
@@ -67,7 +68,8 @@ export function ScanScreen({
     if (initialFresh) resetScan();
   }, [initialError, initialSample, initialFresh]);
 
-  const readable = photos.filter((photo) => !photo.unreadable).length;
+  const converting = photos.some((photo) => photo.converting);
+  const readable = photos.filter((photo) => !photo.unreadable && !photo.convertFailed && !photo.converting).length;
   const errorPhotos = photos.filter((photo) => photo.unreadable);
 
   function addList(list: FileList | null) {
@@ -145,7 +147,7 @@ export function ScanScreen({
                   notice={notice}
                   onRetry={analyze}
                   onSamples={loadSamplePhotos}
-                  disabled={readable === 0}
+                  disabled={readable === 0 || converting}
                 />
               </div>
             ) : null}
@@ -192,7 +194,7 @@ export function ScanScreen({
               </div>
 
               <div className="hidden pt-1 pb-[22px] lg:block">
-                <AnalyzeButton label={analyzeLabel(readable, lang)} disabled={readable === 0} onClick={analyze} />
+                <AnalyzeButton label={analyzeLabel(readable, lang)} disabled={readable === 0 || converting} onClick={analyze} />
               </div>
             </div>
           </div>
@@ -204,7 +206,7 @@ export function ScanScreen({
           className="sticky bottom-0 z-20 -mx-4 mt-4 px-4 pt-5 pb-7 lg:hidden"
           style={{ background: "linear-gradient(rgba(245,245,247,0), #F5F5F7 35%)" }}
         >
-          <AnalyzeButton label={analyzeLabel(readable, lang)} disabled={readable === 0} onClick={analyze} />
+          <AnalyzeButton label={analyzeLabel(readable, lang)} disabled={readable === 0 || converting} onClick={analyze} />
         </div>
       </div>
     </PageFrame>
@@ -504,12 +506,29 @@ function PhotoGrid({
                         boxShadow: grouped ? "0 6px 14px rgba(0,0,0,.16)" : undefined,
                       }}
                     />
-                  ) : (
+                  ) : photo.converting || photo.convertFailed ? null : (
                     <span key={photo.id} style={{ position: "relative", zIndex: 1 }}>
                       {photo.filename}
                     </span>
                   ),
                 )}
+                {group.some((photo) => photo.converting) ? (
+                  <span
+                    role="status"
+                    aria-label={t("scanScreen.converting")}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 6,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      background: "rgba(255,255,255,.45)",
+                    }}
+                  >
+                    <span className="h-7 w-7 animate-spin rounded-full border-[3px] border-black/20 border-t-black" />
+                  </span>
+                ) : null}
                 {grouped ? (
                   <span
                     style={{
@@ -574,7 +593,7 @@ function PhotoGrid({
                     position: "absolute",
                     top: 6,
                     right: 6,
-                    zIndex: 6,
+                    zIndex: 8,
                     width: 36,
                     height: 36,
                     borderRadius: 9999,
@@ -588,6 +607,11 @@ function PhotoGrid({
                   <CloseIcon />
                 </button>
               </div>
+              {group.some((photo) => photo.convertFailed) ? (
+                <p style={{ margin: 0, fontWeight: 500, fontSize: 13, lineHeight: 1.35, color: "#111" }}>
+                  {t("scanScreen.fail_unsupported")}
+                </p>
+              ) : null}
               {grouped ? (
                 <button
                   type="button"
@@ -685,21 +709,7 @@ function NoticeCard({
   const limited = notice.kind === "rate_limited" || notice.kind === "quota";
   const paused = notice.kind === "failed" && notice.code === "demo_only";
   const failKey =
-    notice.kind === "rate_limited"
-      ? "rateBody"
-      : notice.kind === "quota"
-        ? "quotaBody"
-        : notice.code === "timeout"
-        ? "fail_timeout"
-        : notice.code === "invalid_response"
-          ? "fail_invalid"
-          : notice.code === "not_configured"
-            ? "fail_config"
-            : notice.code === "bad_request"
-              ? "fail_request"
-              : notice.code === "demo_only"
-                ? "demoPaused"
-                : "fail_generic";
+    notice.kind === "rate_limited" ? "rateBody" : notice.kind === "quota" ? "quotaBody" : scanFailKey(notice.code);
   return (
     <div className="px-[18px]" style={{ background: "#fff", borderRadius: 24 }}>
       <div

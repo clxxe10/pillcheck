@@ -12,6 +12,8 @@ export class AiError extends Error {
 
 export const errorStatus: Record<ExtractErrorCode, number> = {
   bad_request: 400,
+  too_large: 413,
+  unsupported_type: 415,
   rate_limited: 429,
   quota: 429,
   timeout: 504,

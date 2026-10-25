@@ -91,10 +91,23 @@ export function ResultsScreen() {
       updateMedicine(mergeIngredientPhoto(medicine, result.medicines[0]));
     } catch (error) {
       const code = error instanceof ExtractRequestError ? error.code : "network";
-      setAddError({
-        id: medicine.id,
-        message: code === "demo_only" ? t("scanScreen.demoPaused") : t("results.addIngredientFailed"),
-      });
+      const key =
+        code === "demo_only"
+          ? "scanScreen.demoPaused"
+          : code === "unsupported_type"
+            ? "scanScreen.fail_unsupported"
+            : code === "too_large"
+              ? "scanScreen.fail_too_large"
+              : code === "timeout"
+                ? "scanScreen.fail_timeout"
+                : code === "network"
+                  ? "scanScreen.fail_network"
+                  : code === "not_configured"
+                    ? "scanScreen.fail_config"
+                    : code === "provider_error"
+                      ? "scanScreen.fail_provider"
+                      : "results.addIngredientFailed";
+      setAddError({ id: medicine.id, message: t(key) });
     } finally {
       setAddingId(null);
     }

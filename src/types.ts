@@ -117,6 +117,8 @@ export type ExtractResponse = {
 
 export type ExtractErrorCode =
   | "bad_request"
+  | "too_large"
+  | "unsupported_type"
   | "rate_limited"
   | "quota"
   | "timeout"
@@ -143,4 +145,8 @@ export type ScanPhoto = {
   unreadable?: UnreadableReason;
   /** Photos that share a groupId are one medicine. */
   groupId?: string;
+  /** HEIC/HEIF is being turned into a JPEG before it can be shown or sent. */
+  converting?: boolean;
+  /** The browser could not open this file. It is not sent. */
+  convertFailed?: boolean;
 };
