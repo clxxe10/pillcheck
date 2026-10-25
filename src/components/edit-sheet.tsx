@@ -10,6 +10,7 @@ import {
   TrashIcon,
 } from "@/components/icons";
 import { photoStripe } from "@/components/orb";
+import { ingredientStatusOf } from "@/lib/ai/normalize";
 import {
   displayName,
   formatDays,
@@ -66,6 +67,8 @@ export function EditSheet({
       ...medicine,
       ...(nextName ? (lang === "ko" ? { name: nextName } : { nameEn: nextName }) : {}),
       ingredient: ingredient.trim(),
+      ingredientStatus: ingredientStatusOf(ingredient.trim()),
+      nameUncertain: false,
       dose: nextDose && nextDose !== formatDose(medicine.dose, lang) ? nextDose : medicine.dose,
       timesPerDay: times,
       days,

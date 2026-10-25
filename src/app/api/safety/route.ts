@@ -32,6 +32,8 @@ function readMedicines(body: unknown): Medicine[] | string {
       name: typeof item.name === "string" ? item.name.trim().slice(0, 160) : "",
       nameEn: typeof item.nameEn === "string" ? item.nameEn.trim().slice(0, 160) : "",
       ingredient: typeof item.ingredient === "string" ? item.ingredient.trim().slice(0, 240) : "",
+      ingredientStatus: item.ingredientStatus === "unknown" ? "unknown" : item.ingredientStatus === "known" ? "known" : undefined,
+      nameUncertain: item.nameUncertain === true,
       dose: typeof item.dose === "string" ? item.dose.trim().slice(0, 40) : "",
       timesPerDay: times > 0 ? Math.min(times, 24) : null,
       days: days > 0 ? Math.min(days, 365) : null,

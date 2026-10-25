@@ -18,11 +18,13 @@ import { analyzeLabel, photoCountLabel, photoPlaceLabel } from "@/lib/format";
 import { useTranslation } from "@/lib/i18n";
 import {
   addFiles,
+  groupPhotos,
   loadSamplePhotos,
   removePhoto,
   resetScan,
   replacePhoto,
   setClinic,
+  ungroupPhotos,
   showSampleError,
   startAnalysis,
   useScan,
@@ -179,6 +181,8 @@ export function ScanScreen({
                     onEdit={setEditingId}
                     onClinic={setClinic}
                     onRemove={remove}
+                    onGroup={groupPhotos}
+                    onUngroup={ungroupPhotos}
                   />
                 )}
               </div>
@@ -350,145 +354,318 @@ function EmptyArt() {
   );
 }
 
+function photoClusters(photos: ScanPhoto[]) {
+  const seen = new Set<string>();
+  const clusters: ScanPhoto[][] = [];
+  for (const photo of photos) {
+    if (photo.groupId) {
+      if (seen.has(photo.groupId)) continue;
+      seen.add(photo.groupId);
+      clusters.push(photos.filter((item) => item.groupId === photo.groupId));
+    } else {
+      clusters.push([photo]);
+    }
+  }
+  return clusters;
+}
+
 function PhotoGrid({
   photos,
   editingId,
   onEdit,
   onClinic,
   onRemove,
+  onGroup,
+  onUngroup,
 }: {
   photos: ScanPhoto[];
   editingId: string | null;
   onEdit: (id: string | null) => void;
   onClinic: (id: string, clinic: string) => void;
   onRemove: (id: string) => void;
+  onGroup: (ids: string[]) => void;
+  onUngroup: (groupId: string) => void;
 }) {
-  const { t } = useTranslation();
-  if (photos.length === 0) return null;
+  const { t, lang } = useTranslation();
+  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const hold = useRef<number | null>(null);
+  const held = useRef(false);
+
+  const clusters = photoClusters(photos);
+  const selectedIds = selected.filter((id) => photos.some((photo) => photo.id === id));
+  const selectedGroups = new Set(
+    photos.filter((photo) => selectedIds.includes(photo.id)).map((photo) => photo.groupId ?? photo.id),
+  );
+
+  function toggle(ids: string[]) {
+    setSelected((current) => {
+      const present = ids.every((id) => current.includes(id));
+      return present ? current.filter((id) => !ids.includes(id)) : [...new Set([...current, ...ids])];
+    });
+  }
+
+  function beginSelect(ids: string[]) {
+    held.current = true;
+    setSelecting(true);
+    setSelected((current) => [...new Set([...current, ...ids])]);
+  }
+
   return (
-    <div className="grid grid-cols-3 gap-2.5">
-      {photos.map((photo) => (
-        <div key={photo.id} className="flex min-w-0 flex-col gap-2">
-          <div
-            style={{
-              position: "relative",
-              aspectRatio: "3 / 4",
-              borderRadius: 18,
-              overflow: "hidden",
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "center",
-              paddingBottom: 8,
-              fontFamily: mono,
-              fontWeight: 600,
-              fontSize: 11,
-              color: "#6B6B72",
-              boxShadow: photo.unreadable ? "inset 0 0 0 2px #111" : undefined,
-              ...photoStripe(),
+    <div>
+      {photos.length >= 2 ? (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSelecting((value) => !value);
+              setSelected([]);
             }}
+            className="h-11 rounded-full border border-[#E3E3E7] bg-white px-4 text-[15px] font-medium"
           >
-            {photo.previewUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- local blob preview
-              <img
-                src={photo.previewUrl}
-                alt=""
-                style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
-              />
-            ) : (
-              photo.filename
-            )}
-            {photo.unreadable ? (
-              <span
+            {selecting ? t("scanScreen.selectingDone") : t("scanScreen.select")}
+          </button>
+          {selecting && selectedIds.length >= 2 && selectedGroups.size > 1 ? (
+            <button
+              type="button"
+              onClick={() => {
+                onGroup(selectedIds);
+                setSelecting(false);
+                setSelected([]);
+              }}
+              className="h-11 rounded-full bg-black px-4 text-[15px] font-medium text-white"
+            >
+              {t("scanScreen.group")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="grid grid-cols-3 gap-2.5">
+        {clusters.map((group) => {
+          const lead = group[0];
+          const ids = group.map((photo) => photo.id);
+          const grouped = group.length > 1 && Boolean(lead.groupId);
+          const isSelected = ids.every((id) => selectedIds.includes(id));
+          return (
+            <div key={lead.groupId ?? lead.id} className="flex min-w-0 flex-col gap-2">
+              <div
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "rgba(17,17,17,.55)",
+                  position: "relative",
+                  aspectRatio: "3 / 4",
+                  borderRadius: 18,
+                  overflow: "hidden",
                   display: "flex",
-                  alignItems: "center",
+                  alignItems: "flex-end",
                   justifyContent: "center",
-                  color: "#fff",
+                  paddingBottom: 8,
+                  fontFamily: mono,
+                  fontWeight: 600,
+                  fontSize: 11,
+                  color: "#6B6B72",
+                  boxShadow: isSelected || group.some((photo) => photo.unreadable) ? "inset 0 0 0 2px #111" : undefined,
+                  ...photoStripe(),
+                }}
+                onPointerDown={() => {
+                  held.current = false;
+                  if (hold.current) window.clearTimeout(hold.current);
+                  hold.current = window.setTimeout(() => beginSelect(ids), 450);
+                }}
+                onPointerUp={() => {
+                  if (hold.current) window.clearTimeout(hold.current);
+                }}
+                onPointerLeave={() => {
+                  if (hold.current) window.clearTimeout(hold.current);
+                }}
+                onContextMenu={(event) => event.preventDefault()}
+                onClick={() => {
+                  if (held.current) {
+                    held.current = false;
+                    return;
+                  }
+                  if (selecting) toggle(ids);
                 }}
               >
-                <RefreshIcon size={28} />
-              </span>
-            ) : null}
-            <button
-              type="button"
-              aria-label={t("removePhoto")}
-              onClick={() => onRemove(photo.id)}
-              style={{
-                position: "absolute",
-                top: 6,
-                right: 6,
-                width: 36,
-                height: 36,
-                borderRadius: 9999,
-                background: "rgba(17,17,17,.72)",
-                color: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <CloseIcon />
-            </button>
-          </div>
-          {editingId === photo.id ? (
-            <input
-              autoFocus
-              value={photo.clinic}
-              maxLength={60}
-              placeholder={t("scanScreen.addClinic")}
-              onChange={(event) => onClinic(photo.id, event.target.value)}
-              onBlur={() => onEdit(null)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") onEdit(null);
-              }}
-              style={{
-                minHeight: 44,
-                padding: "6px 10px",
-                border: "1.5px solid #111",
-                borderRadius: 14,
-                background: "#fff",
-                fontWeight: 500,
-                fontSize: 14,
-                lineHeight: 1.25,
-                color: "#111",
-                outline: "none",
-                width: "100%",
-              }}
-            />
-          ) : (
-            <button
-              type="button"
-              onClick={() => onEdit(photo.id)}
-              style={{
-                minHeight: 44,
-                padding: "6px 10px",
-                border: "1px solid #E3E3E7",
-                borderRadius: 14,
-                background: "#fff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 6,
-                textAlign: "left",
-                fontWeight: 500,
-                fontSize: 14,
-                lineHeight: 1.25,
-                color: "#111",
-              }}
-            >
-              <span className="min-w-0" style={photo.clinic ? undefined : { color: "#6B6B72" }}>
-                {photo.clinic || t("scanScreen.addClinic")}
-              </span>
-              <span style={{ color: "#6B6B72", display: "flex", flex: "none" }}>
-                <PencilIcon />
-              </span>
-            </button>
-          )}
-        </div>
-      ))}
+                {group.slice(0, 3).map((photo, index) =>
+                  photo.previewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- local blob preview
+                    <img
+                      key={photo.id}
+                      src={photo.previewUrl}
+                      alt=""
+                      style={{
+                        position: "absolute",
+                        inset: grouped ? 10 : 0,
+                        width: grouped ? undefined : "100%",
+                        height: grouped ? undefined : "100%",
+                        objectFit: "cover",
+                        borderRadius: grouped ? 12 : 0,
+                        transform: grouped ? `rotate(${(index - 1) * 7}deg)` : undefined,
+                        zIndex: index + 1,
+                        boxShadow: grouped ? "0 6px 14px rgba(0,0,0,.16)" : undefined,
+                      }}
+                    />
+                  ) : (
+                    <span key={photo.id} style={{ position: "relative", zIndex: 1 }}>
+                      {photo.filename}
+                    </span>
+                  ),
+                )}
+                {grouped ? (
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: 8,
+                      bottom: 8,
+                      zIndex: 5,
+                      borderRadius: 9999,
+                      background: "#111",
+                      color: "#fff",
+                      padding: "4px 8px",
+                      fontFamily: "inherit",
+                      fontWeight: 600,
+                      fontSize: 12,
+                      lineHeight: 1.2,
+                    }}
+                  >
+                    {photoCountLabel(group.length, lang)}
+                  </span>
+                ) : null}
+                {group.some((photo) => photo.unreadable) ? (
+                  <span
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      zIndex: 4,
+                      background: "rgba(17,17,17,.55)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#fff",
+                    }}
+                  >
+                    <RefreshIcon size={28} />
+                  </span>
+                ) : null}
+                {selecting ? (
+                  <span
+                    style={{
+                      position: "absolute",
+                      top: 8,
+                      left: 8,
+                      zIndex: 6,
+                      width: 22,
+                      height: 22,
+                      borderRadius: 9999,
+                      border: "2px solid #fff",
+                      background: isSelected ? "#111" : "rgba(17,17,17,.35)",
+                      boxShadow: "0 0 0 1px #111",
+                    }}
+                  />
+                ) : null}
+                <button
+                  type="button"
+                  aria-label={t("removePhoto")}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    for (const id of ids) onRemove(id);
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  style={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    zIndex: 6,
+                    width: 36,
+                    height: 36,
+                    borderRadius: 9999,
+                    background: "rgba(17,17,17,.72)",
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <CloseIcon />
+                </button>
+              </div>
+              {grouped ? (
+                <button
+                  type="button"
+                  onClick={() => onUngroup(lead.groupId as string)}
+                  style={{
+                    minHeight: 44,
+                    padding: "6px 10px",
+                    border: "1px solid #E3E3E7",
+                    borderRadius: 14,
+                    background: "#fff",
+                    fontWeight: 500,
+                    fontSize: 14,
+                    color: "#111",
+                  }}
+                >
+                  {t("scanScreen.ungroup")}
+                </button>
+              ) : editingId === lead.id ? (
+                <input
+                  autoFocus
+                  value={lead.clinic}
+                  maxLength={60}
+                  placeholder={t("scanScreen.addClinic")}
+                  onChange={(event) => onClinic(lead.id, event.target.value)}
+                  onBlur={() => onEdit(null)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") onEdit(null);
+                  }}
+                  style={{
+                    minHeight: 44,
+                    padding: "6px 10px",
+                    border: "1.5px solid #111",
+                    borderRadius: 14,
+                    background: "#fff",
+                    fontWeight: 500,
+                    fontSize: 14,
+                    lineHeight: 1.25,
+                    color: "#111",
+                    outline: "none",
+                    width: "100%",
+                  }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selecting) toggle(ids);
+                    else onEdit(lead.id);
+                  }}
+                  style={{
+                    minHeight: 44,
+                    padding: "6px 10px",
+                    border: "1px solid #E3E3E7",
+                    borderRadius: 14,
+                    background: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 6,
+                    textAlign: "left",
+                    fontWeight: 500,
+                    fontSize: 14,
+                    lineHeight: 1.25,
+                    color: "#111",
+                  }}
+                >
+                  <span className="min-w-0" style={lead.clinic ? undefined : { color: "#6B6B72" }}>
+                    {lead.clinic || t("scanScreen.addClinic")}
+                  </span>
+                  <span style={{ color: "#6B6B72", display: "flex", flex: "none" }}>
+                    <PencilIcon />
+                  </span>
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -701,7 +878,11 @@ function Hint() {
       <span style={{ flex: "none", color: "#6B6B72", display: "flex" }}>
         <InfoIcon />
       </span>
-      {t("scanScreen.clear")}
+      <span style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span>{t("scanScreen.clear")}</span>
+        <span>{t("scanScreen.roundBottle")}</span>
+        <span>{t("scanScreen.ingredientPanel")}</span>
+      </span>
     </div>
   );
 }

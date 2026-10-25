@@ -29,9 +29,11 @@ export const extractSchema: Record<string, unknown> = {
           "timeSlots",
           "timeSlotsEstimated",
           "sourceImageIndex",
+          "sourceImageIndexes",
           "sourceType",
           "confidence",
           "note",
+          "nameUncertain",
         ],
         properties: {
           name: { type: "string" },
@@ -43,9 +45,11 @@ export const extractSchema: Record<string, unknown> = {
           timeSlots: { type: "array", items: { type: "string", enum: [...SLOTS] } },
           timeSlotsEstimated: { type: "boolean" },
           sourceImageIndex: { type: "integer" },
+          sourceImageIndexes: { type: "array", items: { type: "integer" } },
           sourceType: { type: "string", enum: [...SOURCE_TYPES] },
           confidence: { type: "string", enum: [...CONFIDENCE] },
           note: { type: "string" },
+          nameUncertain: { type: "boolean" },
         },
       },
     },
@@ -64,21 +68,34 @@ export const extractSchema: Record<string, unknown> = {
   },
 };
 
-export function buildExtractPrompt(clinics: string[]) {
+export function buildExtractPrompt(
+  clinics: string[],
+  options?: { groups?: number[][]; focus?: { name: string; nameEn: string } | null },
+) {
   const photoList = clinics
     .map((clinic, index) => `- Image ${index}: ${clinic.trim() || "clinic not given"}`)
     .join("\n");
+  const groups = (options?.groups ?? []).filter((group) => group.length >= 2);
+  const groupText = groups.length
+    ? `\nThese photos are different sides of the SAME product. Return one medicine for each group. Merge the printed name, ingredients, directions, and cautions. Set sourceImageIndexes to every index in the group.\n${groups
+        .map((group) => `- Images ${group.join(", ")} are one product.`)
+        .join("\n")}\n`
+    : "";
+  const focus = options?.focus;
+  const focusText = focus
+    ? `\nThis photo is the ingredient panel of a product the user already identified: "${focus.name}" (${focus.nameEn}). Return exactly one medicine. Keep that product name. Fill ingredient, dose, and cautions from this photo. Do not switch to a different product.\n`
+    : "";
 
   return `You read photos of medicines and list every product whose package or label you can see.
 
 The images are attached in this order (0-based index) with the clinic name the user typed for each:
 ${photoList}
-
+${groupText}${focusText}
 First classify each image, then read it:
 - prescription_bag: a Korean pharmacy bag (약 봉투).
 - prescription: a prescription sheet (처방전) or medication guide (복약안내문).
-- otc_box: a carton or box, usually marked 일반의약품.
-- bottle: a bottle, pill container, or 약통.
+- otc_box: a carton or box marked 일반의약품.
+- bottle: a bottle, pill container, or 약통. If the label says 전문의약품, use "prescription" instead.
 - blister: a blister card or foil-backed strip.
 - unknown: loose tablets or capsules with no package, or a photo where no label text is visible.
 
@@ -117,12 +134,15 @@ For each medicine return:
 - days: number of days as an integer. Use 0 when it is not printed or the medicine is ongoing.
 - timeSlots: from a 용법 grid or text, using "morning" (아침), "lunch" (점심), "evening" (저녁), "bedtime" (취침전/자기 전). If only a count is printed and no time of day: 1회 → ["morning"], 2회 → ["morning","evening"], 3회 → ["morning","lunch","evening"], 4회 → all four. If 취침전 is printed, include "bedtime". Use [] when no count and no time of day are printed.
 - timeSlotsEstimated: true only when the label does not print a time of day and you filled timeSlots from the daily count. false when the times of day are printed, or when timeSlots is [].
-- sourceImageIndex: index of the image the medicine was read from.
-- sourceType: the class of that image.
+- sourceImageIndex: the first image this medicine was read from.
+- sourceImageIndexes: every image index this medicine was read from. One index when it comes from a single photo.
+- nameUncertain: true only when the product name is partly unreadable. Otherwise false.
+- sourceType: the class of that image. If the label prints 전문의약품, use "prescription" even when the package is a bottle or a box. A pharmacy bag stays "prescription_bag". 일반의약품 stays otc_box or bottle.
 - confidence: "high" if the name, ingredient, strength, and a printed schedule (including the time of day) are clearly legible; "medium" if you inferred something other than the time of day (for example the ingredient from a well-known product name); "low" when timeSlotsEstimated is true, when times per day and time of day are not printed, or any field is partly unreadable. Low confidence is shown as "Needs review". A prescription that is ongoing (days 0) but has a printed daily schedule, including the time of day, can still be "high" or "medium".
 
 Rules:
-- One entry per medicine per image. If the same medicine appears in two photos, list it twice with each sourceImageIndex — duplicates across clinics matter.
+- Pharmacy bags (prescription_bag) from different photos stay separate, even when the medicine name matches. Those can be real duplicates from different clinics.
+- A bottle, box, or blister photographed more than once is one medicine when the name, ingredient, and strength match. Return one entry and list every image in sourceImageIndexes. Do not merge two pharmacy bags.
 - Never invent a medicine, a strength, or a schedule. If you cannot read a name, leave it out.
 - unknown photos (loose pills, no package or label): return no medicine for that image. Add { "index", "reason": "no_package" } to "unreadable".
 - For every other image where you could not read any medicine, add { "index", "reason" } to "unreadable" with reason "blurry", "glare", "cropped", "not_medicine", or "other". If nothing at all is readable, return an empty "medicines" array.

@@ -51,6 +51,34 @@ function readImages(body: unknown): ExtractImage[] | string {
   return images;
 }
 
+function readGroups(body: unknown, count: number) {
+  const raw = (body as { groups?: unknown }).groups;
+  if (!Array.isArray(raw)) return [];
+  const groups: number[][] = [];
+  for (const entry of raw) {
+    const indexes = Array.isArray(entry) ? entry : (entry as { indexes?: unknown } | null)?.indexes;
+    if (!Array.isArray(indexes)) continue;
+    const clean = [
+      ...new Set(
+        indexes
+          .map((value) => Number(value))
+          .filter((value) => Number.isInteger(value) && value >= 0 && value < count),
+      ),
+    ].sort((a, b) => a - b);
+    if (clean.length >= 2) groups.push(clean);
+  }
+  return groups;
+}
+
+function readFocus(body: unknown) {
+  const focus = (body as { focus?: unknown }).focus;
+  if (!focus || typeof focus !== "object") return null;
+  const name = typeof (focus as { name?: unknown }).name === "string" ? (focus as { name: string }).name.trim().slice(0, 160) : "";
+  const nameEn = typeof (focus as { nameEn?: unknown }).nameEn === "string" ? (focus as { nameEn: string }).nameEn.trim().slice(0, 160) : "";
+  if (!name && !nameEn) return null;
+  return { name, nameEn };
+}
+
 export async function POST(request: Request) {
   const paused = demoOnlyResponse();
   if (paused) return paused;
@@ -77,7 +105,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await extractMedicines(images);
+    const result = await extractMedicines(images, { groups: readGroups(body, images.length), focus: readFocus(body) });
     return Response.json(result, { headers: noStore });
   } catch (error) {
     const aiError =

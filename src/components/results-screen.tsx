@@ -18,6 +18,7 @@ import {
   placeLabel,
   resultsMeta,
   reviewCountLabel,
+  reviewReasons,
   shortName,
   sourceKindLabel,
   sourceLine,
@@ -38,10 +39,12 @@ import {
   type PdfSlot,
   type PdfWarning,
 } from "@/lib/results-pdf";
+import { mergeIngredientPhoto } from "@/lib/ai/normalize";
+import { ExtractRequestError, requestExtraction } from "@/lib/extract-client";
 import { resetScan } from "@/lib/scan-store";
 import { useSession } from "@/lib/session";
 import { useNow } from "@/lib/use-now";
-import type { DoseSlot, Medicine, SafetyAlert } from "@/types";
+import type { DoseSlot, Medicine, ReviewReason, SafetyAlert } from "@/types";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -61,6 +64,8 @@ export function ResultsScreen() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [manualCopy, setManualCopy] = useState<string | null>(null);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const [addError, setAddError] = useState<{ id: string; message: string } | null>(null);
   useEffect(() => {
     setReady(true);
   }, []);
@@ -68,7 +73,7 @@ export function ResultsScreen() {
     if (ready && !hasResults) router.replace("/scan?fresh=1");
   }, [ready, hasResults, router]);
   const editing = medicines.find((item) => item.id === editingId) ?? null;
-  const reviewCount = medicines.filter((item) => item.confidence === "low").length;
+  const reviewCount = medicines.filter((item) => reviewReasons(item).length > 0 || item.confidence === "low").length;
   const clinics = new Set(medicines.map((item) => item.clinic)).size;
 
   function showToast(message: string) {
@@ -76,12 +81,32 @@ export function ResultsScreen() {
     window.setTimeout(() => setToast((current) => (current === message ? null : current)), 3200);
   }
 
+  async function addIngredientPhoto(medicine: Medicine, file: File) {
+    setAddingId(medicine.id);
+    setAddError(null);
+    try {
+      const result = await requestExtraction([{ file, clinic: medicine.clinic }], {
+        focus: { name: medicine.name, nameEn: medicine.nameEn },
+      });
+      updateMedicine(mergeIngredientPhoto(medicine, result.medicines[0]));
+    } catch (error) {
+      const code = error instanceof ExtractRequestError ? error.code : "network";
+      setAddError({
+        id: medicine.id,
+        message: code === "demo_only" ? t("scanScreen.demoPaused") : t("results.addIngredientFailed"),
+      });
+    } finally {
+      setAddingId(null);
+    }
+  }
+
   function shareText() {
     const lines = medicines.map((medicine) => {
       const kind = sourceKindLabel(medicine.sourceType, lang);
+      const ingredient = medicine.ingredientStatus === "unknown" ? t("results.ingredientMissing") : medicine.ingredient;
       const note = medicine.note ? ` — ${medicine.note}` : "";
       const place = placeLabel(medicine.clinic, medicine.sourceImageIndex + 1, lang);
-      return `${displayName(medicine, lang)} — ${medicine.ingredient}${note} — ${doseLine(medicine, lang)} — ${place}${kind ? ` — ${kind}` : ""}`;
+      return `${displayName(medicine, lang)} — ${ingredient}${note} — ${doseLine(medicine, lang)} — ${place}${kind ? ` — ${kind}` : ""}`;
     });
     const warnings = alerts.map((alert) => {
       const copy = warningCopy(alert, medicines, lang, t);
@@ -232,7 +257,14 @@ export function ResultsScreen() {
             </div>
             <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-3.5 lg:overflow-visible lg:px-0">
               {medicines.map((medicine) => (
-                <MedicineCard key={medicine.id} medicine={medicine} onEdit={() => setEditingId(medicine.id)} />
+                <MedicineCard
+                  key={medicine.id}
+                  medicine={medicine}
+                  adding={addingId === medicine.id}
+                  error={addError?.id === medicine.id ? addError.message : null}
+                  onEdit={() => setEditingId(medicine.id)}
+                  onAddPhoto={(file) => addIngredientPhoto(medicine, file)}
+                />
               ))}
             </div>
           </div>
@@ -285,6 +317,7 @@ function AlertSummary({
           </div>
           <BlackBadge>{t("results.checkNow")}</BlackBadge>
         </div>
+        <CheckedSummary medicines={medicines} alerts={alerts} />
         {alerts.map((alert) => (
           <ResultAlert key={alert.id} alert={alert} medicines={medicines} />
         ))}
@@ -308,6 +341,59 @@ function AlertSummary({
         </button>
       </div>
     </div>
+  );
+}
+
+function CheckedSummary({ medicines, alerts }: { medicines: Medicine[]; alerts: SafetyAlert[] }) {
+  const { t } = useTranslation();
+  const unknown = medicines.filter((medicine) => medicine.ingredientStatus === "unknown").length;
+  const unknownCopy = (unknown === 1 ? t("results.unknownLeftOut") : t("results.unknownLeftOutMany")).replace(
+    "{count}",
+    String(unknown),
+  );
+  const checks = ["clearDup", "clearDose", "clearDur", "clearCaution"] as const;
+  return (
+    <>
+      {unknown > 0 ? (
+        <p style={{ margin: 0, padding: "16px 0", borderBottom: "1px solid #EDEDF0", fontWeight: 500, fontSize: 16, lineHeight: 1.45 }}>
+          {unknownCopy}
+        </p>
+      ) : null}
+      {medicines.length === 1 ? (
+        <p style={{ margin: 0, padding: "16px 0", borderBottom: "1px solid #EDEDF0", fontWeight: 500, fontSize: 16, lineHeight: 1.45 }}>
+          {t("results.onlyOne")}
+        </p>
+      ) : null}
+      {alerts.length === 0 && medicines.length > 1 ? (
+        <div style={{ padding: "16px 0", borderBottom: "1px solid #EDEDF0" }}>
+          <p style={{ margin: 0, fontWeight: 600, fontSize: 17, lineHeight: 1.4 }}>{t("results.clearNone")}</p>
+          <ul style={{ margin: "12px 0 0", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 8 }}>
+            {checks.map((key) => (
+              <li key={key} style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 15, lineHeight: 1.35 }}>
+                <span
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 999,
+                    background: "#D4FF4F",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flex: "none",
+                    fontSize: 12,
+                    fontWeight: 700,
+                  }}
+                >
+                  ✓
+                </span>
+                {t(`results.${key}`)}
+              </li>
+            ))}
+          </ul>
+          <p style={{ margin: "12px 0 0", fontSize: 14, lineHeight: 1.45, color: "#6B6B72" }}>{t("results.clearPersonal")}</p>
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -370,8 +456,30 @@ function ResultAlert({ alert, medicines }: { alert: SafetyAlert; medicines: Medi
   );
 }
 
-function MedicineCard({ medicine, onEdit }: { medicine: Medicine; onEdit: () => void }) {
+function reviewBadgeLabel(reason: ReviewReason | "generic", t: (key: string) => string, compact: boolean) {
+  if (reason === "time") return t("results.reviewTime");
+  if (reason === "directions") return t("results.reviewDirections");
+  if (reason === "name") return t("results.reviewName");
+  if (reason === "ingredient") return t("results.reviewIngredient");
+  return compact ? t("results.review") : t("results.needsReview");
+}
+
+function MedicineCard({
+  medicine,
+  adding,
+  error,
+  onEdit,
+  onAddPhoto,
+}: {
+  medicine: Medicine;
+  adding: boolean;
+  error: string | null;
+  onEdit: () => void;
+  onAddPhoto: (file: File) => void;
+}) {
   const { t, lang } = useTranslation();
+  const reasons = reviewReasons(medicine);
+  const badges: (ReviewReason | "generic")[] = reasons.length > 0 ? reasons : medicine.confidence === "low" ? ["generic"] : [];
   return (
     <div className="w-[264px] flex-none rounded-[20px] bg-white px-4 lg:w-auto lg:rounded-[22px] lg:px-5">
       <div
@@ -394,27 +502,68 @@ function MedicineCard({ medicine, onEdit }: { medicine: Medicine; onEdit: () => 
             {displayName(medicine, lang)}
           </span>
         </span>
-        {medicine.confidence === "low" ? (
-          <span
-            className="h-6 px-[9px] text-[12.5px] lg:h-[26px] lg:px-2.5 lg:text-[13px]"
-            style={{
-              borderRadius: 9999,
-              background: "#4E6075",
-              color: "#fff",
-              fontWeight: 600,
-              display: "flex",
-              alignItems: "center",
-              flex: "none",
-            }}
-          >
-            <span className="lg:hidden">{t("results.review")}</span>
-            <span className="hidden lg:inline">{t("results.needsReview")}</span>
+        {badges.length > 0 ? (
+          <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flex: "none" }}>
+            {badges.map((reason) => (
+              <span
+                key={reason}
+                className="h-6 px-[9px] text-[12px] lg:h-[26px] lg:px-2.5 lg:text-[13px]"
+                style={{
+                  borderRadius: 9999,
+                  background: "#4E6075",
+                  color: "#fff",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span className="lg:hidden">{reviewBadgeLabel(reason, t, true)}</span>
+                <span className="hidden lg:inline">{reviewBadgeLabel(reason, t, false)}</span>
+              </span>
+            ))}
           </span>
         ) : null}
       </div>
       <div className="pt-3 pb-3.5 lg:flex lg:items-end lg:gap-2.5 lg:pb-4">
         <div className="flex flex-col gap-1 lg:flex-1">
-          <span style={{ fontWeight: 400, fontSize: 15, lineHeight: 1.35, color: "#4A4A50" }}>{medicine.ingredient}</span>
+          {medicine.ingredientStatus === "unknown" ? (
+            <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
+              <span style={{ fontWeight: 600, fontSize: 15, lineHeight: 1.35 }}>{t("results.ingredientMissing")}</span>
+              <label
+                className="no-print"
+                style={{
+                  position: "relative",
+                  minHeight: 40,
+                  padding: "0 14px",
+                  borderRadius: 9999,
+                  background: "#111",
+                  color: "#fff",
+                  fontWeight: 600,
+                  fontSize: 13,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  cursor: adding ? "progress" : "pointer",
+                }}
+              >
+                {adding ? t("results.addingIngredient") : t("results.addIngredientPhoto")}
+                <input
+                  type="file"
+                  accept="image/*,.heic,.heif"
+                  disabled={adding}
+                  style={{ position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" }}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) onAddPhoto(file);
+                  }}
+                />
+              </label>
+              {error ? <span style={{ fontWeight: 500, fontSize: 13, lineHeight: 1.35, color: "#6B6B72" }}>{error}</span> : null}
+            </span>
+          ) : (
+            <span style={{ fontWeight: 400, fontSize: 15, lineHeight: 1.35, color: "#4A4A50" }}>{medicine.ingredient}</span>
+          )}
           {medicine.note ? (
             <span style={{ fontWeight: 400, fontSize: 13, lineHeight: 1.35, color: "#6B6B72" }}>{medicine.note}</span>
           ) : null}
@@ -583,7 +732,12 @@ function pdfWarning(alert: SafetyAlert, medicines: Medicine[], lang: Lang, t: (k
 function pdfMedicine(medicine: Medicine, lang: Lang, t: (key: string) => string): PdfMedicine {
   return {
     name: displayName(medicine, lang),
-    ingredient: [medicine.ingredient, medicine.note].filter(Boolean).join("\n"),
+    ingredient: [
+      medicine.ingredientStatus === "unknown" ? t("results.ingredientMissing") : medicine.ingredient,
+      medicine.note,
+    ]
+      .filter(Boolean)
+      .join("\n"),
     dose: formatDoseOrDash(medicine.dose, lang),
     times: medicine.timesPerDay === null ? "—" : formatTimes(medicine.timesPerDay, lang),
     days: formatDays(medicine.days, lang),

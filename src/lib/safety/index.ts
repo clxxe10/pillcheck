@@ -1,6 +1,6 @@
 import interactionsJson from "@/lib/safety/interactions.json";
 import limitsJson from "@/lib/safety/limits.json";
-import { snapshotReport } from "@/lib/safety/dur-snapshot";
+import { snapshotCovers, snapshotReport } from "@/lib/safety/dur-snapshot";
 import type { AlertReason, Medicine, SafetyAlert, WarningKind } from "@/types";
 
 /**
@@ -190,6 +190,23 @@ export function canonicalIngredient(raw: string): string | null {
   return word;
 }
 
+function matchesAlias(text: string, table: Record<string, readonly string[]>) {
+  return Object.values(table).some((aliases) => aliases.some((alias) => text.includes(alias)));
+}
+
+/** True when at least one part is an alias or a name the DUR snapshot actually contains. */
+export function knownIngredient(raw: string): boolean {
+  const parts = raw.split(",").map((part) => part.trim()).filter(Boolean);
+  if (parts.length === 0) return false;
+  return parts.some((part) => {
+    const text = ingredientText(part);
+    if (!text) return false;
+    if (matchesAlias(text, ALIASES) || matchesAlias(text, MATCH_ALIASES)) return true;
+    const name = canonicalIngredient(part);
+    return Boolean(name && snapshotCovers(name));
+  });
+}
+
 const STRENGTH_TAIL = /(\d+(?:[.,]\d+)?\s*(?:mcg|μg|µg|㎍|mg|㎎|밀리그램|그램|g)\b.*)$/i;
 
 /** Rewrites a known foreign spelling or brand to the English generic, and keeps a printed strength. */
@@ -265,6 +282,7 @@ function strengthMg(text: string): number | null {
 function componentsOf(medicines: Medicine[]): Component[] {
   const components: Component[] = [];
   for (const medicine of medicines) {
+    if (medicine.ingredientStatus === "unknown") continue;
     const count = doseCount(medicine.dose);
     const timesPerDay = medicine.timesPerDay !== null && medicine.timesPerDay > 0 ? medicine.timesPerDay : 0;
     for (const part of medicine.ingredient.split(",")) {

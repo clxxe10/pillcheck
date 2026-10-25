@@ -18,7 +18,7 @@ export type AnalysisOutcome =
   | { type: "unreadable"; photos: { id: string; reason: UnreadableReason }[] }
   | { type: "error"; code: ExtractErrorCode | "network" };
 
-type PendingAnalysis = { photos: ScanPhoto[]; demo: boolean };
+type PendingAnalysis = { photos: ScanPhoto[]; demo: boolean; groups: number[][] };
 
 type ScanState = {
   photos: ScanPhoto[];
@@ -30,7 +30,7 @@ type ScanState = {
 const DEMO_DELAY_MS = 3200;
 
 /** Opening /analyzing without queued photos replays the sample demo. */
-const directVisit: PendingAnalysis = { photos: samplePhotos, demo: true };
+const directVisit: PendingAnalysis = { photos: samplePhotos, demo: true, groups: [] };
 
 const initialState: ScanState = {
   photos: [],
@@ -97,10 +97,53 @@ export function addFiles(files: File[]) {
   set({ photos: [...keep, ...images.map(photoFromFile)], notice: null });
 }
 
+function withWholeGroups(photos: ScanPhoto[]) {
+  const counts = new Map<string, number>();
+  for (const photo of photos) {
+    if (!photo.groupId) continue;
+    counts.set(photo.groupId, (counts.get(photo.groupId) ?? 0) + 1);
+  }
+  return photos.map((photo) =>
+    photo.groupId && (counts.get(photo.groupId) ?? 0) < 2 ? { ...photo, groupId: undefined } : photo,
+  );
+}
+
 export function removePhoto(id: string) {
   const photo = state.photos.find((item) => item.id === id);
   if (photo) revoke(photo);
-  set({ photos: state.photos.filter((item) => item.id !== id) });
+  set({ photos: withWholeGroups(state.photos.filter((item) => item.id !== id)) });
+}
+
+export function groupPhotos(ids: string[]) {
+  const chosen = new Set(ids);
+  if (chosen.size < 2) return;
+  const related = new Set(ids);
+  for (const photo of state.photos) {
+    if (photo.groupId && state.photos.some((item) => chosen.has(item.id) && item.groupId === photo.groupId)) {
+      related.add(photo.id);
+    }
+  }
+  const groupId = state.photos.find((photo) => photo.groupId && related.has(photo.id))?.groupId ?? `group-${Date.now()}`;
+  set({
+    photos: state.photos.map((photo) => (related.has(photo.id) ? { ...photo, groupId } : photo)),
+  });
+}
+
+export function ungroupPhotos(groupId: string) {
+  set({
+    photos: state.photos.map((photo) => (photo.groupId === groupId ? { ...photo, groupId: undefined } : photo)),
+  });
+}
+
+function groupIndexes(photos: ScanPhoto[]) {
+  const map = new Map<string, number[]>();
+  photos.forEach((photo, index) => {
+    if (!photo.groupId) return;
+    const list = map.get(photo.groupId) ?? [];
+    list.push(index);
+    map.set(photo.groupId, list);
+  });
+  return [...map.values()].filter((indexes) => indexes.length >= 2);
 }
 
 export function replacePhoto(id: string, file: File) {
@@ -108,14 +151,19 @@ export function replacePhoto(id: string, file: File) {
     photos: state.photos.map((photo) => {
       if (photo.id !== id) return photo;
       revoke(photo);
-      return { ...photoFromFile(file), id: photo.id, clinic: photo.clinic };
+      return { ...photoFromFile(file), id: photo.id, clinic: photo.clinic, groupId: photo.groupId };
     }),
     notice: null,
   });
 }
 
 export function setClinic(id: string, clinic: string) {
-  set({ photos: state.photos.map((photo) => (photo.id === id ? { ...photo, clinic } : photo)) });
+  const groupId = state.photos.find((photo) => photo.id === id)?.groupId;
+  set({
+    photos: state.photos.map((photo) =>
+      photo.id === id || (groupId && photo.groupId === groupId) ? { ...photo, clinic } : photo,
+    ),
+  });
 }
 
 /** `?error=1` preview: the third sample bag comes back blurry. */
@@ -138,7 +186,7 @@ export function startAnalysis(fallbackClinic: (index: number) => string) {
     .filter((photo) => !photo.unreadable)
     .map((photo, index) => ({ ...photo, clinic: photo.clinic.trim() || fallbackClinic(index) }));
   if (photos.length === 0) return false;
-  set({ pending: { photos, demo: photos.every((photo) => photo.sample) }, notice: null });
+  set({ pending: { photos, demo: photos.every((photo) => photo.sample), groups: groupIndexes(photos) }, notice: null });
   return true;
 }
 
@@ -159,8 +207,16 @@ async function analyze(pending: PendingAnalysis): Promise<AnalysisOutcome> {
   }
   if (pending.photos.length > 5) return { type: "error", code: "bad_request" };
   try {
+    const indexed = pending.photos.flatMap((photo, index) =>
+      photo.file ? [{ index, file: photo.file, clinic: photo.clinic }] : [],
+    );
+    const indexMap = new Map(indexed.map((item, position) => [item.index, position]));
+    const groups = pending.groups
+      .map((group) => group.flatMap((index) => (indexMap.has(index) ? [indexMap.get(index) as number] : [])))
+      .filter((group) => group.length >= 2);
     const result = await requestExtraction(
-      pending.photos.flatMap((photo) => (photo.file ? [{ file: photo.file, clinic: photo.clinic }] : [])),
+      indexed.map(({ file, clinic }) => ({ file, clinic })),
+      { groups },
     );
     if (result.medicines.length === 0 || result.unreadable.length > 0) {
       const flagged = result.unreadable.length

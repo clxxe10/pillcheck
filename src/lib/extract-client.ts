@@ -60,6 +60,7 @@ async function encodeImage(file: File): Promise<{ data: string; mimeType: string
 
 export async function requestExtraction(
   photos: { file: File; clinic: string }[],
+  extra?: { groups?: number[][]; focus?: { name: string; nameEn: string } },
 ): Promise<ExtractResponse> {
   const images: ExtractImage[] = await Promise.all(
     photos.map(async (photo) => ({ ...(await encodeImage(photo.file)), clinic: photo.clinic })),
@@ -72,7 +73,11 @@ export async function requestExtraction(
     response = await fetch("/api/extract", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ images }),
+      body: JSON.stringify({
+        images,
+        ...(extra?.groups?.length ? { groups: extra.groups } : {}),
+        ...(extra?.focus ? { focus: extra.focus } : {}),
+      }),
       signal: controller.signal,
       cache: "no-store",
     });

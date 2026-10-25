@@ -5,7 +5,7 @@ import { AiError, isAbortError } from "@/lib/ai/errors";
 import { runGemini } from "@/lib/ai/gemini";
 import { normalizeExtraction, parseModelJson } from "@/lib/ai/normalize";
 import { buildExtractPrompt } from "@/lib/ai/prompt";
-import type { ExtractImage, ExtractResponse } from "@/types";
+import type { ExtractFocus, ExtractImage, ExtractResponse } from "@/types";
 
 export const EXTRACT_TIMEOUT_MS = 45_000;
 
@@ -18,13 +18,17 @@ export function currentProvider(): AiProvider {
 }
 
 /** Reads medicines from label photos with the configured provider. Nothing is stored. */
-export async function extractMedicines(images: ExtractImage[]): Promise<ExtractResponse> {
+export async function extractMedicines(
+  images: ExtractImage[],
+  options?: { groups?: number[][]; focus?: ExtractFocus | null },
+): Promise<ExtractResponse> {
   const provider = currentProvider();
   const clinics = images.map((image) => image.clinic);
+  const groups = options?.groups ?? [];
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), EXTRACT_TIMEOUT_MS);
   const request = {
-    prompt: buildExtractPrompt(clinics),
+    prompt: buildExtractPrompt(clinics, { groups, focus: options?.focus ?? null }),
     images,
     signal: controller.signal,
     timeoutMs: EXTRACT_TIMEOUT_MS,
@@ -32,7 +36,7 @@ export async function extractMedicines(images: ExtractImage[]): Promise<ExtractR
 
   try {
     const text = provider === "claude" ? await runClaude(request) : await runGemini(request);
-    return normalizeExtraction(parseModelJson(text), clinics);
+    return normalizeExtraction(parseModelJson(text), clinics, groups);
   } catch (error) {
     if (error instanceof AiError) throw error;
     if (controller.signal.aborted || isAbortError(error)) {

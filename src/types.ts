@@ -2,6 +2,10 @@ export type DoseSlot = "morning" | "lunch" | "evening" | "bedtime";
 
 export type Confidence = "high" | "medium" | "low";
 
+export type IngredientStatus = "known" | "unknown";
+
+export type ReviewReason = "time" | "directions" | "name" | "ingredient";
+
 /** What the photo showed. `unknown` is a loose tablet or a shot with no label. */
 export type SourceType =
   | "prescription_bag"
@@ -20,6 +24,10 @@ export type Medicine = {
   nameEn: string;
   /** Active ingredient(s) with strength, in English. */
   ingredient: string;
+  /** Unknown when the ingredient is empty or matches neither an alias nor the DUR list. */
+  ingredientStatus?: IngredientStatus;
+  /** True when the printed name was only partly readable. */
+  nameUncertain?: boolean;
   /** Amount per dose as printed, e.g. "1정", "2 tablets", "5 mL". Empty when the label has none. */
   dose: string;
   /** Printed phrase such as "and other ingredients", when unnamed ingredients were left out. */
@@ -32,8 +40,10 @@ export type Medicine = {
   timeSlots: DoseSlot[] | null;
   /** True when the time of day was not printed and the slots were inferred from a daily count. */
   timeSlotsEstimated: boolean;
-  /** 0-based index into the photos sent with the request. */
+  /** 0-based index of the first photo this medicine was read from. */
   sourceImageIndex: number;
+  /** Every photo of this medicine, including other sides of the same package. */
+  sourceImageIndexes?: number[];
   /** Package the medicine was read from. */
   sourceType: SourceType;
   confidence: Confidence;
@@ -87,8 +97,17 @@ export type ExtractImage = {
   clinic: string;
 };
 
+export type ExtractFocus = {
+  name: string;
+  nameEn: string;
+};
+
 export type ExtractRequest = {
   images: ExtractImage[];
+  /** Each inner list is photo indexes of one product, shot from different sides. */
+  groups?: number[][];
+  /** Set when the photo is an ingredient panel for a medicine the user already has. */
+  focus?: ExtractFocus;
 };
 
 export type ExtractResponse = {
@@ -122,4 +141,6 @@ export type ScanPhoto = {
   previewUrl?: string;
   file?: File;
   unreadable?: UnreadableReason;
+  /** Photos that share a groupId are one medicine. */
+  groupId?: string;
 };

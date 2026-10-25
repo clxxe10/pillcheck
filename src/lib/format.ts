@@ -1,6 +1,6 @@
 import type { Lang } from "@/lib/i18n";
 import { ingredientLabel } from "@/lib/safety";
-import type { DoseSlot, Medicine, SafetyAlert, SourceType } from "@/types";
+import type { DoseSlot, Medicine, ReviewReason, SafetyAlert, SourceType } from "@/types";
 
 export const slotOrder: DoseSlot[] = ["morning", "lunch", "evening", "bedtime"];
 
@@ -146,6 +146,15 @@ export function summaryLabel(meds: number, clinics: number, lang: Lang) {
   const medLabel = meds === 1 ? "1 medicine" : `${meds} medicines`;
   const clinicLabel = clinics === 1 ? "1 clinic" : `${clinics} clinics`;
   return `${medLabel} · ${clinicLabel}`;
+}
+
+export function reviewReasons(medicine: Medicine): ReviewReason[] {
+  const reasons: ReviewReason[] = [];
+  if (medicine.timeSlotsEstimated) reasons.push("time");
+  if (!medicine.dose.trim() && medicine.timesPerDay == null) reasons.push("directions");
+  if (medicine.nameUncertain) reasons.push("name");
+  if (medicine.ingredientStatus === "unknown") reasons.push("ingredient");
+  return reasons;
 }
 
 export function reviewCountLabel(count: number, lang: Lang) {

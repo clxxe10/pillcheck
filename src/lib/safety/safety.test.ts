@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { sampleResult } from "@/lib/mock";
-import { canonicalIngredient, checkSafety, ingredientSearchNames, unifyIngredient } from "@/lib/safety";
+import { canonicalIngredient, checkSafety, ingredientSearchNames, knownIngredient, unifyIngredient } from "@/lib/safety";
 import { collectDurFindings } from "@/lib/safety/dur-match";
 import { durSnapshotDate, snapshotCovers } from "@/lib/safety/dur-snapshot";
 import type { Medicine } from "@/types";
 
-function medicine(partial: Pick<Medicine, "id" | "ingredient" | "dose" | "timesPerDay">): Medicine {
+function medicine(partial: Pick<Medicine, "id" | "ingredient" | "dose" | "timesPerDay"> & Partial<Medicine>): Medicine {
   return {
     name: partial.id,
     nameEn: partial.id,
@@ -20,6 +20,16 @@ function medicine(partial: Pick<Medicine, "id" | "ingredient" | "dose" | "timesP
     ...partial,
   };
 }
+
+describe("knownIngredient", () => {
+  it("accepts aliases and DUR names, and rejects an unmatched brand", () => {
+    assert.equal(knownIngredient("Acetaminophen 500 mg"), true);
+    assert.equal(knownIngredient("Tylenol"), true);
+    assert.equal(knownIngredient(""), false);
+    assert.equal(knownIngredient("칸데디핀"), false);
+    assert.equal(knownIngredient("Candesartan"), snapshotCovers("candesartan"));
+  });
+});
 
 describe("checkSafety", () => {
   it("flags the sample bag the same way every time", () => {
@@ -257,6 +267,23 @@ describe("checkSafety", () => {
     assert.deepEqual(
       found.sameClass.map((pair) => [pair.a, pair.b].sort().join("+")),
       ["aspirin+ibuprofen"],
+    );
+  });
+
+  it("leaves a medicine with an unknown ingredient out of duplicate checks", () => {
+    const alerts = checkSafety([
+      medicine({
+        id: "brand",
+        ingredient: "Acetaminophen 500 mg",
+        dose: "1정",
+        timesPerDay: 3,
+        ingredientStatus: "unknown",
+      }),
+      medicine({ id: "known", ingredient: "Acetaminophen 500 mg", dose: "1정", timesPerDay: 3 }),
+    ]);
+    assert.equal(
+      alerts.some((alert) => alert.kind === "duplicate"),
+      false,
     );
   });
 });
